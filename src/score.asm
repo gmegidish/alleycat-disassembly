@@ -192,7 +192,7 @@ lab_27b5:
 lab_27ee:
     cmp word [level_number],0x7
     jnz short lab_27f9
-    call lab_300f
+    call draw_love_scene_bg
     ret
 lab_27f9:
     cmp word [level_number],0x6
@@ -215,7 +215,7 @@ lab_27f9:
     mov bx,0x2344
     mov ax,0xb84
     call draw_block_list
-    call lab_4b47
+    call init_level6_objects
     ret
 lab_283e:
     cmp word [level_number],0x5
@@ -257,7 +257,7 @@ lab_288d:
     call draw_door_frame
     mov ax,0x16c0
     call draw_block_pair
-    call lab_3f9e
+    call init_level4_bg
     ret
 lab_28be:
     cmp word [level_number],0x3
@@ -282,7 +282,7 @@ lab_28be:
     mov bx,0x2624
     db 0x2b, 0xc0                       ; sub ax,ax
     call draw_block_list
-    call lab_3bdb
+    call draw_level3_bg
     ret
 lab_2909:
     mov ax,0x640

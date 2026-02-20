@@ -38,7 +38,7 @@ lab_2e4f:
     clc                                 ; no collision
     ret
     db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-lab_2e60:
+spawn_thrown_object:
     cmp word [0x2e8d],0x8
     jb short lab_2e68
 lab_2e67:
@@ -126,7 +126,7 @@ lab_2f16:
     db 0x2b, 0xdb                       ; sub bx,bx
     mov ah,0xb
     int byte 0x10
-    call lab_4e3e
+    call check_l7_all_objects
     cmp byte [0x70f2],0x0
     jz short lab_2f59
     call draw_cupid
@@ -136,7 +136,7 @@ lab_2f59:
     mov bx,0x4a5
     call start_tone
     ret
-lab_2f66:
+tick_level_thrown_objects:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
     cmp dx,[0x2e8f]
@@ -206,7 +206,7 @@ lab_2ffb:
     mov bx,0x349
     call start_tone
     ret
-lab_300f:
+draw_love_scene_bg:
     db 0x2b, 0xc0                       ; sub ax,ax
     mov bx,0x2e24
     call draw_block_list
@@ -225,7 +225,7 @@ lab_3039:
     mov cx,[0x2e88]
     mov dl,[0x2e8a]
     push bx
-    call lab_30e3
+    call draw_bg_tile
     pop bx
     mov si,[0x2e8b]
     mov ax,[0x2e88]
@@ -286,7 +286,7 @@ lab_30b8:
     pop cx
     loop short lab_30b8
     ret
-lab_30e3:
+draw_bg_tile:
     push bx
     call calc_cga_addr
     db 0x8b, 0xf8                       ; mov di,ax
@@ -345,7 +345,7 @@ lab_314d:
 ; Thrown objects tick handler. Rate-limited per level (timing from table
 ; at 0x32F2 indexed by level_number). Spawns and updates thrown objects
 ; (shoes, bottles, etc.) that fall from windows in alley/level scenes.
-lab_3150:
+tick_thrown_objects:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
     mov bx,[0x4]
@@ -359,7 +359,7 @@ lab_3168:
     ret
 lab_3169:
     mov [0x328c],dx
-    call lab_33ba
+    call check_thrown_cat_hit
     jb short lab_3168
     call check_enemy_object_hit
     jb short lab_3168
@@ -523,7 +523,7 @@ lab_32fe:
     mov [0x327f],dl
     call calc_cga_addr
     mov [0x3284],ax
-    call lab_33ba
+    call check_thrown_cat_hit
     jnb short lab_3328
 lab_330d:
     mov byte [0x3280],0x0
@@ -536,17 +536,17 @@ lab_330d:
 lab_3328:
     call check_enemy_object_hit
     jb short lab_330d
-    call lab_33a0
+    call erase_thrown_sprite
     add word [0x327a],0x2
-    call lab_3339
+    call draw_thrown_sprite
     ret
-lab_3339:
+draw_thrown_sprite:
     mov bx,[0x327a]
     mov ax,[bx+0x3260]
     db 0x3d, 0x00, 0x00                 ; cmp ax,0x0
     jnz short lab_334b
     mov [0x327a],ax
-    jmp short lab_3339
+    jmp short draw_thrown_sprite
 lab_334b:
     db 0x8b, 0xf0                       ; mov si,ax
     mov di,[0x3284]
@@ -580,7 +580,7 @@ lab_3399:
     dec byte [0x3289]
     jnz short lab_3370
     ret
-lab_33a0:
+erase_thrown_sprite:
     cmp byte [0x3286],0x0
     jnz short lab_33b9
     mov ax,0xb800
@@ -591,14 +591,14 @@ lab_33a0:
     call blit_to_cga
 lab_33b9:
     ret
-lab_33ba:
+check_thrown_cat_hit:
     cmp byte [0x1cb8],0x0
     jnz short lab_3403
     cmp word [0x4],0x6
     jnz short lab_33d3
     cmp byte [0x44bd],0x0
     jz short lab_33d3
-    call lab_47b0
+    call check_thrown_near_cat
     ret
 lab_33d3:
     mov ax,[0x327d]
@@ -625,7 +625,7 @@ lab_3403:
 ; --- lab_3405 ---
 ; Initializes the thrown objects subsystem. Zeros the object slots,
 ; resets spawn timers and positions. Called at the start of each level.
-lab_3405:
+init_thrown_objects:
     cld
     db 0x2b, 0xc0                       ; sub ax,ax
     push ds
@@ -803,7 +803,7 @@ lab_35bb:
 lab_35c7:
     clc
     ret
-lab_35c9:
+init_level2_objects:
     mov word [0x3411],0x0
     mov word [0x3415],0x0
     mov byte [0x3410],0xc
@@ -869,7 +869,7 @@ lab_3661:
 lab_3672:
     loop lab_3640
     ret
-lab_3675:
+update_level2_objects:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
     cmp dx,[0x3509]
@@ -1014,7 +1014,7 @@ lab_37e1:
     call blit_to_cga                           ;undefined blit_to_cga()
 lab_37e4:
     ret
-lab_37e5:
+animate_level2_blocks:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
     db 0x8b, 0xc2                       ; mov ax,dx
@@ -1060,7 +1060,7 @@ lab_384a:
     add [bx+si],al
     add [bx+si],al
     db 0x00
-lab_3850:
+update_entrance_anim:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
     db 0x8b, 0xc2                       ; mov ax,dx
@@ -1097,7 +1097,7 @@ lab_38a3:
     add [bx+si],al
     add [bx+si],al
     add [bx+si],al
-lab_38b0:
+handle_level_complete:
     cmp word [0x6],0x7
     jnz short lab_38ba
     jmp short lab_38d3
@@ -1106,10 +1106,10 @@ lab_38ba:
     inc word [0x414]
     mov byte [0x418],0x1
     mov dx,0xaaaa
-    call lab_3a96
+    call mask_score_tiles
     db 0x2b, 0xc0                       ; sub ax,ax
     mov byte [0x369f],0x0
-    call lab_3aac
+    call animate_score_bar
 lab_38d3:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
@@ -1139,7 +1139,7 @@ lab_3905:
     db 0xd1, 0xe0                       ; shl ax,0x0
 lab_390e:
     mov [0x3697],ax
-    call lab_3af4
+    call binary_to_bcd
     mov bx,[0x6]
     db 0xd0, 0xe3                       ; shl bl,0x0
     mov si,[bx+0x36cc]
@@ -1164,12 +1164,12 @@ lab_3946:
     call add_bcd_scores
     pop cx
     loop short lab_3946
-    call lab_39fa
+    call save_score_regions
     mov byte [0x369e],0x38
     mov byte [0x3699],0x1
     mov word [0x3722],0x44
-    call lab_3a3a
-    call lab_3a6c
+    call print_bonus_score
+    call print_level7_bonus
     jmp short lab_39a7
 lab_396e:
     mov si,0x368d
@@ -1178,7 +1178,7 @@ lab_396e:
     mov byte [0x3699],0x2
     mov word [0x3722],0x1e
     mov dx,0xffff
-    call lab_3a96
+    call mask_score_tiles
     mov ax,0xa8c
     sub ax,[0x3697]
     mov cl,0x4
@@ -1188,8 +1188,8 @@ lab_396e:
     mov ah,0x28
     mul ah
     mov byte [0x369f],0x1
-    call lab_3aac
-    call lab_3a3a
+    call animate_score_bar
+    call print_bonus_score
 lab_39a7:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
@@ -1202,7 +1202,7 @@ lab_39af:
 lab_39bb:
     call play_level_note
 lab_39be:
-    call lab_3a1c
+    call flash_score_color
     sub dx,[0x3695]
     cmp dx,[0x3722]
     jb short lab_39af
@@ -1225,7 +1225,7 @@ lab_39dc:
     mov cx,0x814
     call blit_to_cga
     ret
-lab_39fa:
+save_score_regions:
     push ds
     pop es
     mov ax,0xb800
@@ -1241,7 +1241,7 @@ lab_39fa:
     push es
     pop ds
     ret
-lab_3a1c:
+flash_score_color:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
     push dx
@@ -1259,7 +1259,7 @@ lab_3a34:
     int byte 0x10
     pop dx
     ret
-lab_3a3a:
+print_bonus_score:
     mov ah,0x2
     mov dh,[0x369e]
     mov cl,0x3
@@ -1279,7 +1279,7 @@ lab_3a50:
     cmp word [0x36a0],0x7
     jb short lab_3a50
     ret
-lab_3a6c:
+print_level7_bonus:
     mov ah,0x2
     mov dl,0xa
     db 0x8a, 0xf2                       ; mov dh,dl
@@ -1300,7 +1300,7 @@ lab_3a83:
     cmp bx,0x14
     jb short lab_3a83
     ret
-lab_3a96:
+mask_score_tiles:
     cld
     mov ax,0x10
     mov es,ax
@@ -1313,7 +1313,7 @@ lab_3aa5:
     stosw
     loop short lab_3aa5
     ret
-lab_3aac:
+animate_score_bar:
     mov [0x369a],ax
     mov ax,0xb800
     mov es,ax
@@ -1344,7 +1344,7 @@ lab_3ae2:
 lab_3af0:
     call silence_speaker
     ret
-lab_3af4:
+binary_to_bcd:
     mov [0x368b],ax
     db 0x2b, 0xc0                       ; sub ax,ax
     mov [0x368d],ax
@@ -1372,14 +1372,14 @@ lab_3b19:
     add [bx+si],al
     add [bx+si],al
     db 0x00
-lab_3b30:
+init_level3_doors:
     mov byte [0x37af],0x3
     mov ax,0x1
     mov [0x37b0],ax
     mov [0x37b2],ax
     mov [0x37b4],ax
     ret
-lab_3b42:
+update_level3_doors:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
     cmp dx,[0x37b8]
@@ -1405,17 +1405,17 @@ lab_3b57:
     mov bx,0x8fd
     call start_tone
     call restore_alley_buffer
-    call lab_3e38
+    call erase_level3_enemy
     mov bx,[0x37b6]
-    call lab_3ba3
+    call close_level3_door
     call save_alley_buffer
-    call lab_3e14
+    call draw_level3_enemy
     ret
 lab_3b9b:
     sub word [0x37b6],0x2
     jnb short lab_3b57
     ret
-lab_3ba3:
+close_level3_door:
     mov word [bx+0x37b0],0x0
     push ds
     pop es
@@ -1437,7 +1437,7 @@ lab_3ba3:
     mov byte [0x553],0x1
 lab_3bda:
     ret
-lab_3bdb:
+draw_level3_bg:
     mov ax,0xb800
     mov es,ax
     mov word [0x37a0],0x66a
@@ -1514,7 +1514,7 @@ lab_3c7f:
     clc
     ret
     db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-lab_3c90:
+init_level3_enemy:
     mov byte [0x3966],0x8
     mov byte [0x396a],0x1
     mov byte [0x3967],0x0
@@ -1522,7 +1522,7 @@ lab_3c90:
     mov word [0x3964],0x118
     mov word [0x396b],0x0
     ret
-lab_3cb1:
+update_level3_enemy:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
     db 0x8b, 0xc2                       ; mov ax,dx
@@ -1533,9 +1533,9 @@ lab_3cc0:
     ret
 lab_3cc1:
     mov [0x39c8],dx
-    call lab_3e52
+    call check_l3_enemy_thrown
     jb short lab_3cc0
-    call lab_3e6e
+    call check_l3_enemy_cat
     jnb short lab_3cd2
     jmp near lab_3d90
 lab_3cd2:
@@ -1606,7 +1606,7 @@ lab_3d71:
 lab_3d76:
     mov [0x3966],al
 lab_3d79:
-    call lab_3e52
+    call check_l3_enemy_thrown
     jnb short lab_3d8b
     mov ax,[0x39c3]
     mov [0x3964],ax
@@ -1614,7 +1614,7 @@ lab_3d79:
     mov [0x3966],al
     ret
 lab_3d8b:
-    call lab_3e6e
+    call check_l3_enemy_cat
     jnb short lab_3dee
 lab_3d90:
     cmp byte [0x553],0x0
@@ -1661,15 +1661,15 @@ lab_3dee:
     mov dl,[0x3966]
     call calc_cga_addr
     mov [0x39ca],ax
-    call lab_3e38
+    call erase_level3_enemy
     dec byte [0x396d]
     jnz short lab_3e10
     mov byte [0x396d],0x2
     db 0x81, 0x36, 0x6b, 0x39, 0x54, 0x00 ; xor word [0x396b],0x54
 lab_3e10:
-    call lab_3e14
+    call draw_level3_enemy
     ret
-lab_3e14:
+draw_level3_enemy:
     mov ax,0xb800
     mov es,ax
     mov di,[0x39ca]
@@ -1681,7 +1681,7 @@ lab_3e14:
     mov cx,0xe03
     call blit_transparent
     ret
-lab_3e38:
+erase_level3_enemy:
     mov ax,0xb800
     mov es,ax
     cmp byte [0x396a],0x0
@@ -1692,7 +1692,7 @@ lab_3e38:
     call blit_to_cga
 lab_3e51:
     ret
-lab_3e52:
+check_l3_enemy_thrown:
     mov ax,[0x3964]
     mov dl,[0x3966]
     mov si,0x18
@@ -1702,7 +1702,7 @@ lab_3e52:
     mov cx,0x1e0e
     call check_rect_collision
     ret
-lab_3e6e:
+check_l3_enemy_cat:
     mov ax,[0x3964]
     mov dl,[0x3966]
     mov si,0x18
@@ -1716,7 +1716,7 @@ lab_3e6e:
     add [bx+si],al
     add [bx+si],al
     db 0x00
-lab_3e90:
+update_level4_state:
     cmp byte [0x39e1],0x0
     jz short lab_3ea4
     db 0x2a, 0xe4                       ; sub ah,ah
@@ -1734,7 +1734,7 @@ lab_3ea4:
 lab_3eb9:
     ret
 lab_3eba:
-    call lab_4065
+    call check_l4_thrown_collision
     jb short lab_3eb9
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
@@ -1782,7 +1782,7 @@ lab_3f12:
 lab_3f35:
     cmp byte [0x1cbf],0x0
     jnz short lab_3f3f
-    call lab_33a0
+    call erase_thrown_sprite
 lab_3f3f:
     sub byte [0x39e1],0x2
     db 0x2a, 0xff                       ; sub bh,bh
@@ -1810,7 +1810,7 @@ lab_3f70:
     call blit_to_cga
     cmp byte [0x1cbf],0x0
     jnz short lab_3f8b
-    call lab_3339
+    call draw_thrown_sprite
 lab_3f8b:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
@@ -1820,7 +1820,7 @@ lab_3f8b:
     call save_cat_background
 lab_3f9d:
     ret
-lab_3f9e:
+init_level4_bg:
     mov ax,0xb800
     mov es,ax
     mov byte [0x39e0],0x0
@@ -1893,7 +1893,7 @@ lab_403c:
     cmp si,0x10
     jb short lab_403c
     ret
-lab_4065:
+check_l4_thrown_collision:
     mov ax,[0x327d]
     mov dl,[0x327f]
     mov si,0x10
@@ -1911,7 +1911,7 @@ lab_4065:
     add [bx+si],al
     add [bx+si],al
     db 0x00
-lab_4090:
+init_level4_objects:
     mov cx,0x4
 lab_4093:
     db 0x8b, 0xd9                       ; mov bx,cx
@@ -1920,7 +1920,7 @@ lab_4093:
     db 0xd1, 0xe6                       ; shl si,0x0
     mov byte [bx+0x3eae],0x1
     mov byte [bx+0x3eb2],0x0
-    call lab_4277
+    call randomize_l4_pos
     call random
     and dl,0xf
     add dl,0x14
@@ -1929,7 +1929,7 @@ lab_4093:
     mov word [0x3eda],0x0
     mov byte [0x3ed8],0x4
     ret
-lab_40c2:
+update_level4_anim:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
     cmp dx,[0x3edc]
@@ -1952,23 +1952,23 @@ lab_40e9:
     db 0xd1, 0xe6                       ; shl si,0x0
     cmp byte [bx+0x3eb2],0x0
     jnz short lab_40cc
-    call lab_42db
+    call check_l4_obj_cat
     jnb short lab_40fc
     jmp short lab_4124
     nop
 lab_40fc:
-    call lab_42fc
+    call check_l4_obj_thrown
     jb short lab_40cc
     cmp byte [bx+0x3eb6],0x0
     jnz short lab_4118
-    call lab_4277
+    call randomize_l4_pos
     call random
     and dl,0x7
     add dl,0x14
     mov [bx+0x3eb6],dl
 lab_4118:
     dec byte [bx+0x3eb6]
-    call lab_42db
+    call check_l4_obj_cat
     jb short lab_4124
     jmp short lab_4181
     nop
@@ -1981,7 +1981,7 @@ lab_4132:
     ret
 lab_4133:
     call restore_alley_buffer
-    call lab_4254
+    call erase_level4_sprite
     mov bx,[0x3eda]
     mov byte [bx+0x3eb2],0x1
     call save_alley_buffer
@@ -2008,11 +2008,11 @@ lab_4155:
     call start_tone
     ret
 lab_4181:
-    call lab_42b4
+    call calc_l4_obj_pos
     mov di,[0x8]
     db 0xd1, 0xe7                       ; shl di,0x0
     mov bp,[di+0x3ede]
-    call lab_431c
+    call check_l4_proximity
     jnb short lab_41b0
     cmp byte [bx+0x3eb6],0x2
     jb short lab_41b0
@@ -2067,11 +2067,11 @@ lab_4204:
     mov cx,[si+0x3ecc]
     call calc_cga_addr
     mov [0x3de4],ax
-    call lab_4254
+    call erase_level4_sprite
     mov bx,[0x3eda]
     db 0x8b, 0xf3                       ; mov si,bx
     db 0xd1, 0xe6                       ; shl si,0x0
-    call lab_42fc
+    call check_l4_obj_thrown
     jnb short lab_4226
     ret
 lab_4226:
@@ -2090,7 +2090,7 @@ lab_4233:
     mov si,[0x3eca]
     call blit_masked
     ret
-lab_4254:
+erase_level4_sprite:
     mov bx,[0x3eda]
     db 0x8b, 0xf3                       ; mov si,bx
     db 0xd1, 0xe6                       ; shl si,0x0
@@ -2104,7 +2104,7 @@ lab_4254:
     call blit_to_cga
 lab_4276:
     ret
-lab_4277:
+randomize_l4_pos:
     mov byte [0x3ed9],0x20
 lab_427c:
     call random
@@ -2120,17 +2120,17 @@ lab_428f:
     cmp di,0x8
     jb short lab_4285
     mov [si+0x3eba],dx
-    call lab_42b4
+    call calc_l4_obj_pos
     cmp byte [0x3ed9],0x0
     jz short lab_42b3
     mov bp,0x32
-    call lab_431c
+    call check_l4_proximity
     jnb short lab_42b3
     dec byte [0x3ed9]
     jmp short lab_427c
 lab_42b3:
     ret
-lab_42b4:
+calc_l4_obj_pos:
     mov di,[si+0x3eba]
     mov al,[di+0x1050]
     mov dl,0xa
@@ -2146,7 +2146,7 @@ lab_42c5:
     db 0x05, 0x08, 0x00                 ; add ax,0x8
     mov [si+0x3ecc],ax
     ret
-lab_42db:
+check_l4_obj_cat:
     push si
     push bx
     mov ax,[si+0x3ecc]
@@ -2160,7 +2160,7 @@ lab_42db:
     pop bx
     pop si
     ret
-lab_42fc:
+check_l4_obj_thrown:
     push si
     push bx
     mov ax,[si+0x3ecc]
@@ -2174,7 +2174,7 @@ lab_42fc:
     pop bx
     pop si
     ret
-lab_431c:
+check_l4_proximity:
     mov ax,[si+0x3ecc]
     sub ax,[0x579]
     jnb short lab_4328
@@ -2194,7 +2194,7 @@ lab_4334:
 lab_433e:
     stc
     ret
-lab_4340:
+update_level5_anim:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
     cmp dx,[0x40b5]
@@ -2209,13 +2209,13 @@ lab_434b:
 lab_435a:
     cmp byte [0x40aa],0xa4
     jb short lab_434a
-    call lab_452d
-    call lab_4557
+    call check_l5_cat_catch
+    call check_l5_thrown
     jb short lab_434a
     call random
     cmp dl,0x30
     ja short lab_439c
-    call lab_44fb
+    call calc_l5_direction
     mov si,[0x8]
     db 0xd1, 0xe6                       ; shl si,0x0
     mov ax,[si+0x40ce]
@@ -2326,7 +2326,7 @@ lab_4477:
 lab_4483:
     mov [0x40b2],ax
 lab_4486:
-    call lab_452d
+    call check_l5_cat_catch
     mov cx,[0x40b2]
     mov dl,[0x40b4]
     call calc_cga_addr
@@ -2340,7 +2340,7 @@ lab_4486:
     mov cx,0x501
     call blit_to_cga
 lab_44b0:
-    call lab_4557
+    call check_l5_thrown
     jb short lab_44e6
     mov byte [0x40b9],0x0
     add word [0x40be],0x2
@@ -2358,7 +2358,7 @@ lab_44d5:
     call blit_transparent
 lab_44e6:
     ret
-lab_44e7:
+check_l5_landing:
     cmp byte [0x571],0x0
     jnz short lab_44f9
     mov al,[0x57b]
@@ -2370,7 +2370,7 @@ lab_44e7:
 lab_44f9:
     clc
     ret
-lab_44fb:
+calc_l5_direction:
     mov ax,[0x40b2]
     mov dl,0x1
     sub ax,[0x579]
@@ -2392,7 +2392,7 @@ lab_4520:
     db 0xd1, 0xe0                       ; shl ax,0x0
     add [0x40cc],ax
     ret
-lab_452d:
+check_l5_cat_catch:
     mov ax,[0x40b2]
     mov dl,[0x40b4]
     mov si,0x8
@@ -2407,7 +2407,7 @@ lab_452d:
     mov byte [0x553],0x1
 lab_4556:
     ret
-lab_4557:
+check_l5_thrown:
     mov ax,[0x40b2]
     mov dl,[0x40b4]
     mov si,0x8
@@ -2420,21 +2420,21 @@ lab_4557:
     mov byte [0x40b8],0xff
 lab_4579:
     ret
-lab_457a:
+init_level5_objects:
     mov cx,0x90
     mov dl,0x86
     mov [0x40a8],cx
     mov [0x40aa],dl
     call calc_cga_addr
     mov [0x40ab],ax
-    call lab_4759
+    call draw_l5_perch
     mov byte [0x40af],0x0
     mov byte [0x40b1],0x0
     mov byte [0x40b9],0x1
     mov byte [0x40b8],0x0
     mov word [0x40c8],0xff
     ret
-lab_45ab:
+update_level5_objects:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
     cmp dx,[0x40ad]
@@ -2445,15 +2445,15 @@ lab_45b6:
     mov [0x40ad],dx
     cmp byte [0x40aa],0xa4
     jnb short lab_45b5
-    call lab_4786
+    call check_l5_thrown_near
     jnb short lab_45d6
-    call lab_44e7
+    call check_l5_landing
     jnb short lab_45b5
     mov byte [0x571],0x1
     mov byte [0x55b],0x10
     ret
 lab_45d6:
-    call lab_473e
+    call check_l5_perch_hit
     jnb short lab_4649
     cmp byte [0x40af],0x0
     jnz short lab_45fa
@@ -2497,7 +2497,7 @@ lab_4631:
     mov [0x57c],al
 lab_4639:
     push cx
-    call lab_473e
+    call check_l5_perch_hit
     pop cx
     jnb short lab_4642
     loop short lab_4602
@@ -2520,7 +2520,7 @@ lab_4666:
     db 0x2d, 0x08, 0x00                 ; sub ax,0x8
 lab_4669:
     mov [0x40a8],ax
-    call lab_473e
+    call check_l5_perch_hit
     jnb short lab_4672
     ret
 lab_4672:
@@ -2532,8 +2532,8 @@ lab_4672:
     mov dl,[0x40aa]
     call calc_cga_addr
     mov [0x40ab],ax
-    call lab_4773
-    call lab_4759
+    call erase_l5_perch
+    call draw_l5_perch
     mov ax,[0x40a8]
     db 0x3d, 0x78, 0x00                 ; cmp ax,0x78
     jb short lab_46a2
@@ -2544,7 +2544,7 @@ lab_46a2:
     mov byte [0x40b1],0x1
     cmp byte [0x1cbf],0x0
     jz short lab_46be
-    call lab_44e7
+    call check_l5_landing
     jnb short lab_46bd
     mov byte [0x571],0x1
     mov byte [0x55b],0x10
@@ -2579,12 +2579,12 @@ lab_46ec:
     mov cx,[0x40a8]
     call calc_cga_addr
     mov [0x40ab],ax
-    call lab_4773
-    call lab_4759
+    call erase_l5_perch
+    call draw_l5_perch
     jmp short lab_46be
 lab_470e:
     call silence_speaker
-    call lab_4773
+    call erase_l5_perch
     mov bp,0x401e
     dec word [0x40a6]
     mov di,[0x40a6]
@@ -2595,11 +2595,11 @@ lab_470e:
     mov [0x40b2],ax
     mov al,[0x40aa]
     mov [0x40b4],al
-    call lab_44fb
+    call calc_l5_direction
     mov al,[0x40ca]
     mov [0x40b7],al
     ret
-lab_473e:
+check_l5_perch_hit:
     mov ax,[0x40a8]
     mov dl,[0x40aa]
     mov si,0x18
@@ -2609,7 +2609,7 @@ lab_473e:
     mov cx,0xe10
     call check_rect_collision
     ret
-lab_4759:
+draw_l5_perch:
     mov ax,0xb800
     mov es,ax
     mov bp,0x401e
@@ -2619,7 +2619,7 @@ lab_4759:
     mov cx,0x1003
     call blit_masked
     ret
-lab_4773:
+erase_l5_perch:
     mov ax,0xb800
     mov es,ax
     mov si,0x401e
@@ -2627,7 +2627,7 @@ lab_4773:
     mov cx,0x1003
     call blit_to_cga
     ret
-lab_4786:
+check_l5_thrown_near:
     cmp byte [0x327f],0x66
     jb short lab_47a4
     mov ax,[0x40a8]
@@ -2647,7 +2647,7 @@ lab_47a4:
     add [bx+si],al
     add [bx+si],al
     add [bx+si],al
-lab_47b0:
+check_thrown_near_cat:
     mov ax,[0x327d]
     mov dl,[0x327f]
     mov si,0x10
@@ -2662,7 +2662,7 @@ lab_47c5:
     mov cx,0xe1e
     call check_rect_collision
     ret
-lab_47d6:
+update_level6_timing:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
     db 0x8b, 0xc2                       ; mov ax,dx
@@ -2701,9 +2701,9 @@ lab_4822:
     jb short lab_484c
     mov ax,[bx+0x4411]
     mov [0x44da],ax
-    call lab_488d
-    call lab_48a1
-    call lab_3339
+    call prepare_l6_erase
+    call clear_l6_object
+    call draw_thrown_sprite
     call draw_alley_foreground
     call activate_enemy_chase
     ret
@@ -2723,10 +2723,10 @@ lab_485d:
 lab_4870:
     push cx
     push bx
-    call lab_48d7
+    call check_l6_proximity
     pop bx
-    call lab_4916
-    call lab_48c1
+    call draw_l6_alert
+    call refresh_l6_display
     pop cx
 lab_487d:
     loop short lab_488a
@@ -2737,16 +2737,16 @@ lab_4889:
     ret
 lab_488a:
     jmp near lab_4800
-lab_488d:
+prepare_l6_erase:
     cmp byte [0x44bd],0x0
     jz short lab_489d
-    call lab_4b03
+    call erase_l6_tracker
     mov byte [0x44bd],0x0
     ret
 lab_489d:
     call restore_alley_buffer
     ret
-lab_48a1:
+clear_l6_object:
     push ds
     pop es
     cld
@@ -2761,18 +2761,18 @@ lab_48a1:
     mov cx,0xd05
     call blit_to_cga
     ret
-lab_48c1:
+refresh_l6_display:
     cmp byte [0x44d9],0x0
     jz short lab_48d2
     cmp byte [0x44bd],0x0
     jz short lab_48d3
-    call lab_4b1d
+    call draw_l6_tracker
 lab_48d2:
     ret
 lab_48d3:
     call draw_alley_foreground
     ret
-lab_48d7:
+check_l6_proximity:
     mov byte [0x44d9],0x0
     mov ax,[bx+0x43e1]
     mov dx,[bx+0x43f9]
@@ -2790,13 +2790,13 @@ lab_4902:
     jz short lab_4902
     cmp byte [0x44bd],0x0
     jz short lab_4912
-    call lab_4b03
+    call erase_l6_tracker
     ret
 lab_4912:
     call restore_alley_buffer
 lab_4915:
     ret
-lab_4916:
+draw_l6_alert:
     mov ax,[bx+0x4411]
     mov si,[bx+0x4459]
     db 0xd1, 0xe6                       ; shl si,0x0
@@ -2813,7 +2813,7 @@ lab_4935:
     mov cx,0x101
     call blit_to_cga
     ret
-lab_4943:
+update_level6_movement:
     cmp byte [0x1cb8],0x0
     jnz short lab_4966
     cmp byte [0x44be],0x0
@@ -2834,10 +2834,10 @@ lab_4967:
     jz short lab_4995
     cmp byte [0x44bd],0x0
     jz short lab_4994
-    call lab_4b03
-    call lab_33a0
+    call erase_l6_tracker
+    call erase_thrown_sprite
     call save_alley_buffer
-    call lab_3339
+    call draw_thrown_sprite
     mov byte [0x44bd],0x0
     mov byte [0x43e0],0x1
     mov byte [0x44be],0x0
@@ -2886,7 +2886,7 @@ lab_49f0:
 lab_49f9:
     cmp byte [0x44bd],0x0
     jz short lab_4a0b
-    call lab_4b03
+    call erase_l6_tracker
     call draw_alley_foreground
     mov byte [0x69a],0x10
 lab_4a0b:
@@ -2944,7 +2944,7 @@ lab_4a9c:
 lab_4aa2:
     call check_vsync
     jz short lab_4aa2
-    call lab_4b03
+    call erase_l6_tracker
     cmp byte [0x44d5],0x0
     jz short lab_4aff
     mov bx,[0x44c1]
@@ -2965,22 +2965,22 @@ lab_4aa2:
     mov byte [0x553],0x1
 lab_4ae7:
     push bx
-    call lab_47b0
+    call check_thrown_near_cat
     pop bx
     jnb short lab_4afc
     push bx
-    call lab_33a0
+    call erase_thrown_sprite
     pop bx
-    call lab_4bc8
-    call lab_3339
+    call draw_l6_tile
+    call draw_thrown_sprite
     jmp short lab_4aff
     nop
 lab_4afc:
-    call lab_4bc8
+    call draw_l6_tile
 lab_4aff:
-    call lab_4b1d
+    call draw_l6_tracker
     ret
-lab_4b03:
+erase_l6_tracker:
     cmp byte [0x43e0],0x0
     jnz short lab_4b1c
     mov di,[0x43de]
@@ -2991,7 +2991,7 @@ lab_4b03:
     call blit_to_cga
 lab_4b1c:
     ret
-lab_4b1d:
+draw_l6_tracker:
     mov byte [0x43e0],0x0
     mov ax,0xb800
     mov es,ax
@@ -3006,7 +3006,7 @@ lab_4b40:
     mov cx,0xa03
     call blit_masked
     ret
-lab_4b47:
+init_level6_objects:
     push ds
     pop es
     db 0x2b, 0xc0                       ; sub ax,ax
@@ -3043,7 +3043,7 @@ lab_4b98:
     mov dl,[si+0x4479]
     mov [bx+0x44c4],dl
     push cx
-    call lab_4bc8
+    call draw_l6_tile
     pop cx
     loop short lab_4b98
     mov byte [0x44d0],0x0
@@ -3052,8 +3052,8 @@ lab_4b98:
     mov byte [0x44d6],0xc
     mov byte [0x44be],0x0
     ret
-lab_4bc8:
-    call lab_4be8
+draw_l6_tile:
+    call calc_l6_addr
     db 0x8b, 0xf8                       ; mov di,ax
     mov al,[bx+0x44c4]
     db 0x2a, 0xe4                       ; sub ah,ah
@@ -3066,7 +3066,7 @@ lab_4bc8:
     mov es,ax
     call blit_to_cga
     ret
-lab_4be8:
+calc_l6_addr:
     push bx
     mov dl,[bx+0x4499]
     db 0xd0, 0xe3                       ; shl bl,0x0
@@ -3078,7 +3078,7 @@ lab_4be8:
     add [bx+si],al
     add [bx+si],al
     add [bx+si],al
-lab_4c00:
+level6_stubs:
     ret
     ret
     ret
@@ -3092,7 +3092,7 @@ lab_4c00:
     add [bx+si],al
     add [bx+si],al
     db 0x00
-lab_4c10:
+update_level7_objects:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
     cmp dx,[0x45b8]
@@ -3112,8 +3112,8 @@ lab_4c1b:
 lab_4c38:
     mov [0x45b8],dx
 lab_4c3c:
-    call lab_4fcd
-    call lab_502d
+    call load_l7_slot
+    call check_l7_cupid
     jnb short lab_4c45
 lab_4c44:
     ret
@@ -3142,10 +3142,10 @@ lab_4c84:
     mov [0x4548],ax
     mov byte [0x454a],0x0
 lab_4c8c:
-    call lab_4dd0
+    call check_l7_cat_hit
     jnb short lab_4c99
     mov bx,[0x45b6]
-    call lab_4fbb
+    call save_l7_slot
     ret
 lab_4c99:
     cmp byte [0x4553],0x0
@@ -3251,21 +3251,21 @@ lab_4da1:
     mov dl,[0x454b]
     call calc_cga_addr
     mov [0x45ba],ax
-    call lab_502d
+    call check_l7_cupid
     jnb short lab_4db5
     ret
 lab_4db5:
-    call lab_4dd0
+    call check_l7_cat_hit
     jb short lab_4dc8
-    call lab_4f4a
-    call lab_4f10
+    call erase_l7_sprite
+    call setup_l7_sprite
     mov byte [0x45be],0x0
-    call lab_4e75
+    call check_l7_object_overlap
 lab_4dc8:
     mov bx,[0x45b6]
-    call lab_4fbb
+    call save_l7_slot
     ret
-lab_4dd0:
+check_l7_cat_hit:
     mov ax,[0x579]
     mov dl,[0x57b]
     mov si,0x18
@@ -3279,12 +3279,12 @@ lab_4dd0:
     jnz short lab_4e00
     mov byte [0x553],0x1
     call restore_alley_buffer
-    call lab_4f4a
+    call erase_l7_sprite
     stc
     ret
 lab_4e00:
     call restore_alley_buffer
-    call lab_4f4a
+    call erase_l7_sprite
     call draw_alley_foreground
     mov byte [0x55b],0x4
     mov byte [0x571],0x1
@@ -3304,19 +3304,19 @@ lab_4e2f:
     stc
 lab_4e3d:
     ret
-lab_4e3e:
+check_l7_all_objects:
     mov byte [0x45be],0x1
     mov ax,[0x45b6]
     push ax
     mov word [0x45b6],0x0
 lab_4e4d:
     mov bx,[0x45b6]
-    call lab_4fcd
+    call load_l7_slot
     cmp word [0x454f],0x0
     jnz short lab_4e65
-    call lab_4e75
+    call check_l7_object_overlap
     mov bx,[0x45b6]
-    call lab_4fbb
+    call save_l7_slot
 lab_4e65:
     inc word [0x45b6]
     cmp word [0x45b6],0x7
@@ -3324,7 +3324,7 @@ lab_4e65:
     pop ax
     mov [0x45b6],ax
     ret
-lab_4e75:
+check_l7_object_overlap:
     mov cx,0x8
 lab_4e78:
     db 0x8b, 0xd9                       ; mov bx,cx
@@ -3355,7 +3355,7 @@ lab_4ea6:
     jz short lab_4ebb
     call erase_cupid
 lab_4ebb:
-    call lab_4f4a
+    call erase_l7_sprite
     pop cx
     db 0x8b, 0xd9                       ; mov bx,cx
     dec bx
@@ -3389,7 +3389,7 @@ lab_4ef8:
 lab_4f0b:
     mov [0x454f],dx
     ret
-lab_4f10:
+setup_l7_sprite:
     mov byte [0x454e],0x0
     mov si,0x4500
     cmp byte [0x454a],0x0
@@ -3408,16 +3408,16 @@ lab_4f3a:
 lab_4f3e:
     mov di,[0x45ba]
     mov [0x454c],di
-    call lab_4fdf
+    call draw_l7_sprite
     ret
-lab_4f4a:
+erase_l7_sprite:
     cmp byte [0x454e],0x0
     jnz short lab_4f58
     mov di,[0x454c]
-    call lab_5008
+    call clear_l7_sprite
 lab_4f58:
     ret
-lab_4f59:
+init_level7_objects:
     mov word [0x45b6],0x0
 lab_4f5f:
     call random
@@ -3442,13 +3442,13 @@ lab_4f95:
     mov al,[bx+0x2bd4]
     add al,0x3
     mov [0x454b],al
-    call lab_4fbb
+    call save_l7_slot
     inc word [0x45b6]
     cmp word [0x45b6],0x7
     jb short lab_4f5f
     mov word [0x45b6],0x0
     ret
-lab_4fbb:
+save_l7_slot:
     push ds
     pop es
     db 0xd0, 0xe3                       ; shl bl,0x0
@@ -3458,7 +3458,7 @@ lab_4fbb:
     mov cx,0xc
     rep movsb
     ret
-lab_4fcd:
+load_l7_slot:
     push ds
     pop es
     db 0xd0, 0xe3                       ; shl bl,0x0
@@ -3468,7 +3468,7 @@ lab_4fcd:
     mov cx,0xc
     rep movsb
     ret
-lab_4fdf:
+draw_l7_sprite:
     mov ax,0xb800
     mov es,ax
     cld
@@ -3490,7 +3490,7 @@ lab_5003:
     dec dh
     jnz short lab_4fe7
     ret
-lab_5008:
+clear_l7_sprite:
     mov ax,0xb800
     mov es,ax
     cld
@@ -3508,7 +3508,7 @@ lab_5028:
     dec dh
     jnz short lab_5013
     ret
-lab_502d:
+check_l7_cupid:
     cmp byte [0x70f2],0x0
     jnz short lab_5036
     clc
@@ -3530,7 +3530,7 @@ lab_5036:
     add [bx+si],al
     add [bx+si],al
     add [bx+si],al
-lab_5060:
+position_victory_cat:
     mov ax,0xb800
     mov es,ax
     mov ax,[0x579]
@@ -3614,14 +3614,14 @@ lab_5120:
     jb short lab_5120
     cmp word [0x4dd6],0xa
     jnz short lab_5141
-    call lab_38b0
+    call handle_level_complete
     db 0x2b, 0xdb                       ; sub bx,bx
     mov ah,0xb
     int byte 0x10
 lab_5141:
     mov word [0x4dd6],0x2
     jmp near lab_50a1
-lab_514a:
+animate_victory_pairs:
     mov cx,0x3
 lab_514d:
     mov bx,0x3
@@ -3646,11 +3646,11 @@ lab_514d:
     mov ax,[bx+0x4dc2]
     mov [0x4dc8],ax
     push cx
-    call lab_519b
+    call init_victory_wave
     pop cx
     loop short lab_514d
     ret
-lab_519b:
+init_victory_wave:
     mov cx,0x8
     mov byte [0x4d91],0x1
 lab_51a3:
@@ -3698,7 +3698,7 @@ lab_51ea:
 lab_5205:
     pop bx
     pop cx
-    call lab_522a
+    call move_victory_object
     loop short lab_51d2
 lab_520c:
     call play_victory_note
@@ -3711,7 +3711,7 @@ lab_520c:
     cmp byte [0x4d6e],0x0
     jz short lab_51c7
     ret
-lab_522a:
+move_victory_object:
     mov ax,[bx+0x4d4a]
     cmp word [bx+0x4d6f],0x1
     jb short lab_525a
@@ -3749,7 +3749,7 @@ lab_5286:
     mov [bx+0x4d5a],ax
 lab_528a:
     ret
-lab_528b:
+run_victory_sequence:
     call init_victory_melody
     cmp byte [0x697],0xfd
     jz short lab_529c
@@ -3757,8 +3757,8 @@ lab_528b:
     mov bx,0x101
     int byte 0x10
 lab_529c:
-    call lab_5060
-    call lab_514a
+    call position_victory_cat
+    call animate_victory_pairs
     call play_full_victory
     cmp byte [0x1f80],0x9
     jnb short lab_52b0
@@ -3776,7 +3776,7 @@ lab_52bb:
     ret
     add [bx+si],al
     db 0x00
-lab_52d0:
+play_march_note:
     cmp byte [0x0],0x0
     jz short lab_5312
     db 0x2a, 0xe4                       ; sub ah,ah
@@ -3804,7 +3804,7 @@ lab_52fc:
     out byte 0x61,al
 lab_5312:
     ret
-lab_5313:
+play_victory_march:
     cmp word [0x8],0x2
     jb short lab_5367
     mov word [0x5016],0x0
@@ -3816,10 +3816,10 @@ lab_5313:
     mov word [0x52c6],0x0
     mov word [0x52c8],0x0
 lab_533c:
-    call lab_5368
+    call draw_march_frame
     db 0x81, 0x36, 0x16, 0x50, 0x02, 0x00 ; xor word [0x5016],0x2
 lab_5345:
-    call lab_52d0
+    call play_march_note
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
     db 0x8b, 0xc2                       ; mov ax,dx
@@ -3833,7 +3833,7 @@ lab_5345:
     call silence_speaker
 lab_5367:
     ret
-lab_5368:
+draw_march_frame:
     mov ax,0xb800
     mov es,ax
     mov bx,[0x8]
@@ -3853,7 +3853,7 @@ lab_5386:
     mov si,[bx+0x5012]
     mov cx,0x2304
     call blit_to_cga
-    call lab_52d0
+    call play_march_note
     add word [0x5010],0x4
     jmp short lab_537a
     db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00

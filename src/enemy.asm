@@ -119,7 +119,7 @@ level_transition:
     jnz short lab_1c12
     cmp byte [0x553],0x0
     jz short lab_1c12
-    call lab_528b
+    call run_victory_sequence
     mov word [0x579],0x98
     mov byte [0x57b],0x5f
 lab_1c12:
@@ -136,10 +136,10 @@ lab_1c12:
     jz short lab_1c46
     cmp word [0x6],0x7
     jnz short lab_1c41
-    call lab_5313
+    call play_victory_march
     jmp short lab_1c49
 lab_1c41:
-    call lab_38b0
+    call handle_level_complete
     jmp short lab_1c49
 lab_1c46:
     call show_level_result

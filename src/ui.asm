@@ -698,7 +698,7 @@ lab_625b:
     pop dx
     pop cx
     pop bx
-    call lab_30e3
+    call draw_bg_tile
     call draw_cupid
     ret
 check_cupid_collision:

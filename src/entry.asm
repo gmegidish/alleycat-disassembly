@@ -259,9 +259,9 @@ lab_0260:
     call draw_level_background                       ; draw score bar
     call setup_level
     call init_sound
-    call lab_3405                       ; init thrown objects state
+    call init_thrown_objects                       ; init thrown objects state
     call reset_cupid                       ; init level 7 state
-    call lab_4f59                       ; init level 7 objects
+    call init_level7_objects                       ; init level 7 objects
     call init_music
 lab_027e:
     call process_keyboard
@@ -269,9 +269,9 @@ lab_027e:
     call play_sound
     call update_animation
     call update_cupid                       ; update level 7 logic
-    call lab_2f66                       ; update thrown objects animation
-    call lab_2e60                       ; spawn thrown objects
-    call lab_4c10                       ; update level 7 objects
+    call tick_level_thrown_objects                    ; update thrown objects animation
+    call spawn_thrown_object                       ; spawn thrown objects
+    call update_level7_objects                       ; update level 7 objects
     mov al,[cat_died]
     or al,[cat_caught]
     or al,[show_attract]
@@ -284,24 +284,24 @@ lab_02aa:
     mov word [level_number],0x6
     call level_transition                       ; transition into level
     call draw_level_background                       ; draw score bar
-    call lab_4c00                       ; init level 6 (stub/data)
+    call level6_stubs                       ; init level 6 (stub/data)
     call setup_level
-    call lab_3405                       ; init thrown objects state
+    call init_thrown_objects                       ; init thrown objects state
     call init_sound
     call init_music
 lab_02c5:
     call process_keyboard
     call poll_joystick
     call play_sound
-    call lab_4943                       ; update level 6 movement
-    call lab_47d6                       ; update level 6 timing
+    call update_level6_movement                       ; update level 6 movement
+    call update_level6_timing                       ; update level 6 timing
     call update_animation
     cmp byte [enemy_active],0x0
     jz short lab_02e3
     call update_enemies
     jmp short lab_02e6
 lab_02e3:
-    call lab_3150                       ; update thrown objects timing
+    call tick_thrown_objects                       ; update thrown objects timing
 lab_02e6:
     mov al,[cat_died]
     or al,[object_hit]
@@ -316,19 +316,19 @@ lab_02fe:
     mov word [level_number],0x5
     call level_transition                       ; transition into level
     call draw_level_background                       ; draw score bar
-    call lab_457a                       ; init level 5 objects
+    call init_level5_objects                       ; init level 5 objects
     call setup_level
-    call lab_3405                       ; init thrown objects state
+    call init_thrown_objects                       ; init thrown objects state
     call init_sound
     call init_music
 lab_0319:
     call process_keyboard
     call poll_joystick
     call play_sound
-    call lab_45ab                       ; update level 5 objects
-    call lab_4340                       ; update level 5 animation
+    call update_level5_objects                       ; update level 5 objects
+    call update_level5_anim                       ; update level 5 animation
     call update_animation
-    call lab_3150                       ; update thrown objects timing
+    call tick_thrown_objects                       ; update thrown objects timing
     call update_enemies
     mov al,[object_hit]
     or al,[cat_caught]
@@ -344,18 +344,18 @@ lab_0349:
     call level_transition                       ; transition into level
     call draw_level_background                       ; draw score bar
     call setup_level
-    call lab_3405                       ; init thrown objects state
+    call init_thrown_objects                       ; init thrown objects state
     call init_sound
-    call lab_4090                       ; init level 4 objects
+    call init_level4_objects                       ; init level 4 objects
     call init_music
 lab_0364:
     call process_keyboard
     call poll_joystick
     call play_sound
     call update_animation
-    call lab_3e90                       ; update level 4 state
-    call lab_40c2                       ; update level 4 animation
-    call lab_3150                       ; update thrown objects timing
+    call update_level4_state                       ; update level 4 state
+    call update_level4_anim                       ; update level 4 animation
+    call tick_thrown_objects                       ; update thrown objects timing
     call update_enemies
     mov al,[object_hit]
     or al,[cat_caught]
@@ -371,19 +371,19 @@ lab_0394:
     call level_transition                       ; transition into level
     call draw_level_background                       ; draw score bar
     call setup_level
-    call lab_3405                       ; init thrown objects state
+    call init_thrown_objects                       ; init thrown objects state
     call init_sound
-    call lab_3b30                       ; init level 3 objects
-    call lab_3c90                       ; init level 3 animation state
+    call init_level3_doors                       ; init level 3 objects
+    call init_level3_enemy                       ; init level 3 animation state
     call init_music
 lab_03b2:
     call process_keyboard
     call poll_joystick
     call play_sound
     call update_animation
-    call lab_3cb1                       ; update level 3 animation
-    call lab_3b42                       ; update level 3 objects
-    call lab_3150                       ; update thrown objects timing
+    call update_level3_enemy                       ; update level 3 animation
+    call update_level3_doors                       ; update level 3 objects
+    call tick_thrown_objects                       ; update thrown objects timing
     call update_enemies
     mov al,[object_hit]
     or al,[cat_caught]
@@ -400,7 +400,7 @@ lab_03e2:
     call level_transition                       ; transition into level
     call draw_level_background                       ; draw score bar
     call setup_level
-    call lab_3405                       ; init thrown objects state
+    call init_thrown_objects                       ; init thrown objects state
     call init_sound
     call init_music
 lab_03fa:
@@ -408,9 +408,9 @@ lab_03fa:
     call poll_joystick
     call play_sound
     call update_animation
-    call lab_3150                       ; update thrown objects timing
+    call tick_thrown_objects                       ; update thrown objects timing
     call update_enemies
-    call lab_3850                       ; update level 0/1 animation
+    call update_entrance_anim                       ; update level 0/1 animation
     cmp byte [level_complete],0x0      ; level complete? → level 2
     jnz short lab_0459
     mov al,[object_hit]
@@ -444,7 +444,7 @@ lab_0459:
     mov word [level_number],0x2
     call level_transition                       ; transition into level
     call draw_level_background                       ; draw score bar
-    call lab_35c9                       ; init level 2 objects
+    call init_level2_objects             ; init level 2 objects
     call setup_level
     mov byte [enemy_chasing],0x0
     mov byte [enemy_active],0x0
@@ -454,8 +454,8 @@ lab_0478:
     call poll_joystick
     call play_sound
     call update_animation
-    call lab_3675                       ; update level 2 objects
-    call lab_37e5                       ; update level 2 animation
+    call update_level2_objects           ; update level 2 objects
+    call animate_level2_blocks           ; update level 2 animation
     mov al,[object_hit]
     or al,[cat_caught]
     or al,[show_attract]

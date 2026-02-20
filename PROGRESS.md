@@ -344,6 +344,46 @@ NASM picks the shortest encoding; the original 1984 assembler sometimes used lon
 - **Same-size differences** (274): opcode direction bit (MOV reg,reg has two encodings),
   accumulator-specific vs sign-extended imm8 (both 3 bytes, different opcodes)
 
+## Call-Target Label Renaming (Phase 2)
+
+After the initial 132 function renames (`fun_XXXX` → meaningful names), a second pass
+renamed `lab_XXXX` labels that are call targets (subroutine entry points within files).
+
+| File | Labels Renamed | Status |
+|---|---|---|
+| game_loop.asm | ~20 | Done |
+| hardware.asm | ~15 | Done |
+| alley.asm | ~25 | Done |
+| alley_drawing.asm | ~10 | Done |
+| ui.asm | ~30 | Done |
+| score.asm | ~15 | Done |
+| enemy.asm | ~20 | Done |
+| sound.asm | ~17 | Done |
+| level_objects.asm | 87 | Done |
+| level_physics.asm | - | Pending |
+
+## Variable Naming Progress
+
+Systematic replacement of raw hex addresses (`[0xNNNN]`) with named EQU constants.
+
+| File | Status |
+|---|---|
+| entry.asm | Done (0 raw refs) |
+| game_loop.asm | Done |
+| score.asm | Done |
+| input.asm | Done |
+| throw.asm | Done |
+| cga.asm | Done |
+| alley.asm | Done |
+| alley_drawing.asm | Done |
+| objects.asm | Done |
+| level_physics.asm | Remaining |
+| ui.asm | Remaining |
+| enemy.asm | Remaining |
+| sound.asm | Remaining |
+| level_objects.asm | Remaining |
+| hardware.asm | Remaining |
+
 ## Bugs Found & Fixed
 1. **Backslash line continuation**: NASM treats `\` at end of line as continuation.
    ASCII sidebar in `db` comments ending with 0x5C (`\`) caused next `db` line to be
