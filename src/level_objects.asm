@@ -1302,7 +1302,8 @@ lab_3a83:
     ret
 mask_score_tiles:
     cld
-    mov ax,0x10
+reloc_8:
+    mov ax,DATA_SEG_PARA                ; relocated: ES = data segment
     mov es,ax
     mov di,0xe
     mov si,0x35e0

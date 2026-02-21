@@ -66,7 +66,8 @@ lab_0535:
 lab_0539:
     mov al,byte [bx + throw_col_init]
     mov [window_column],al
-    db 0xb8, 0x10, 0x00                 ; mov ax,0x1010
+reloc_2:
+    mov ax,DATA_SEG_PARA                ; relocated: ES = data segment
     mov es,ax
     mov di,throw_obj_buf
     mov ah,byte [bx + throw_y_param]

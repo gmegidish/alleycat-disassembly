@@ -36,7 +36,8 @@ lab_5c9c:
 
 ; --- print_startup_msg ---
 print_startup_msg:
-    db 0xb8, 0x10, 0x00                 ; mov ax,0x1010
+reloc_9:
+    mov ax,DATA_SEG_PARA                ; relocated: DS = data segment
     mov ds,ax
     call print_string                           ;undefined print_string()
     ret

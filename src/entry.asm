@@ -29,8 +29,9 @@ entry:
     mov ax,0x0
     push ax
     call detect_video                           ;undefined detect_video()
-    db 0xb8, 0x10, 0x00                 ; mov ax,0x1010
-    mov ds,ax                           ; DS = data segment (load_base + 0x10)
+reloc_1:
+    mov ax,DATA_SEG_PARA                ; relocated: DS = data segment
+    mov ds,ax
     call read_rom_id                           ;undefined read_rom_id()
     mov byte [video_mode],0x4
     mov word [difficulty_counter],0x0

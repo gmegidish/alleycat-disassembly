@@ -51,7 +51,8 @@ init_bios_data:
     push es
     push di
     push cx
-    db 0xb8, 0x10, 0x00                 ; mov ax,0x1010
+reloc_4:
+    mov ax,DATA_SEG_PARA                ; relocated: ES = data segment
     mov es,ax
     cld
     mov di,0x6b7
@@ -134,7 +135,8 @@ lab_14b1:
     push es
     push di
     push cx
-    mov di,0x10
+reloc_5:
+    mov di,DATA_SEG_PARA                ; relocated: ES = data segment
     mov es,di
     in al,byte 0x60
     db 0x8a, 0xe0                       ; mov ah,al
@@ -171,7 +173,8 @@ lab_14e3:
     push es
     push di
     push cx
-    mov di,0x10
+reloc_6:
+    mov di,DATA_SEG_PARA                ; relocated: ES = data segment
     mov es,di
     db 0x8a, 0xe0                       ; mov ah,al
     and al,0x7f

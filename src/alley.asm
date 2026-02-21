@@ -160,7 +160,8 @@ save_cat_background:
 
 ; --- save_alley_buffer ---
 save_alley_buffer:
-    db 0xb8, 0x10, 0x00                 ; mov ax,0x1010
+reloc_3:
+    mov ax,DATA_SEG_PARA                ; relocated: ES = data segment
     mov es,ax
     mov di,alley_save_buf
     push ds

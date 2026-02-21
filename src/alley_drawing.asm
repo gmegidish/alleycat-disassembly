@@ -94,7 +94,8 @@ lab_2acf:
     mov bx,word [difficulty_level]
     mov bl,byte [bx + throw_chance]
     mov bh,byte [draw_row_param]
-    db 0xb8, 0x10, 0x00                 ; mov ax,0x1010
+reloc_7:
+    mov ax,DATA_SEG_PARA                ; relocated: ES = data segment
     mov es,ax
     mov di,throw_obj_buf
     call generate_throw_object                           ;undefined generate_throw_object()

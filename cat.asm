@@ -216,39 +216,49 @@ key_pause equ 0x06c9
 key_demo equ 0x06cb
 key_cheat equ 0x06cc
 
+; === Segment layout constants ===
+%define MZ_HEADER_SIZE 0x200
+%define RELOC_COUNT 9
+%define CS_PARA ((code_start - load_image) >> 4)
+%define DATA_SEG_PARA ((data_start - load_image) >> 4)
+
 ; === MZ EXE Header (512 bytes) ===
-; CS:IP=0723:0000  SS:SP=0000:0100  9 relocations
+mz_header:
     dw 0x5A4D                       ; e_magic: 'MZ' signature
-    dw 0x011B                       ; e_cblp: bytes in last page (283)
-    dw 0x006C                       ; e_cp: pages in file (108)
-    dw 0x0009                       ; e_crlc: relocation count (9)
-    dw 0x0020                       ; e_cparhdr: header paragraphs (512 bytes)
+    dw (file_end - mz_header) & 0x1FF          ; e_cblp: bytes in last page
+    dw ((file_end - mz_header) + 511) >> 9    ; e_cp: pages in file
+    dw RELOC_COUNT                  ; e_crlc: relocation count
+    dw MZ_HEADER_SIZE >> 4          ; e_cparhdr: header paragraphs
     dw 0x0000                       ; e_minalloc
     dw 0xFFFF                       ; e_maxalloc
-    dw 0x0000                       ; e_ss: initial SS
-    dw 0x0100                       ; e_sp: initial SP
+    dw 0x0000                       ; e_ss: initial SS (= load base)
+    dw stack_end - load_image       ; e_sp: initial SP
     dw 0x8555                       ; e_csum: checksum
     dw 0x0000                       ; e_ip: initial IP
-    dw 0x0723                       ; e_cs: initial CS
-    dw 0x0020                       ; e_lfarlc: relocation table offset
+    dw CS_PARA                      ; e_cs: initial CS
+    dw reloc_table - mz_header      ; e_lfarlc: relocation table offset
     dw 0x0000                       ; e_ovno: overlay number
     db 0xDC, 0x0B, 0x00, 0x04       ; reserved
-; Relocation table (9 entries: offset, segment)
-    dw 0x0009, 0x0723               ; reloc 1: CS:0x0009
-    dw 0x0541, 0x0723               ; reloc 2: CS:0x0541
-    dw 0x1125, 0x0723               ; reloc 3: CS:0x1125
-    dw 0x13ED, 0x0723               ; reloc 4: CS:0x13ED
-    dw 0x14B8, 0x0723               ; reloc 5: CS:0x14B8
-    dw 0x1501, 0x0723               ; reloc 6: CS:0x1501
-    dw 0x2ADE, 0x0723               ; reloc 7: CS:0x2ADE
-    dw 0x3A98, 0x0723               ; reloc 8: CS:0x3A98
-    dw 0x5C9F, 0x0723               ; reloc 9: CS:0x5C9F
-    times (512 - ($ - $$)) db 0     ; pad to 512 bytes
+; Relocation table: each entry patches a 16-bit word (segment ref) at CS:offset
+reloc_table:
+    dw reloc_1 - code_start + 1, CS_PARA   ; entry.asm: mov ax,DS
+    dw reloc_2 - code_start + 1, CS_PARA   ; throw.asm: mov ax,DS → ES
+    dw reloc_3 - code_start + 1, CS_PARA   ; alley.asm: mov ax,DS → ES
+    dw reloc_4 - code_start + 1, CS_PARA   ; hardware.asm: mov ax,DS → ES
+    dw reloc_5 - code_start + 1, CS_PARA   ; hardware.asm: mov di,DS → ES
+    dw reloc_6 - code_start + 1, CS_PARA   ; hardware.asm: mov di,DS → ES
+    dw reloc_7 - code_start + 1, CS_PARA   ; alley_drawing.asm: mov ax,DS → ES
+    dw reloc_8 - code_start + 1, CS_PARA   ; level_objects.asm: mov ax,DS → ES
+    dw reloc_9 - code_start + 1, CS_PARA   ; ui.asm: mov ax,DS
+    times (MZ_HEADER_SIZE - ($ - $$)) db 0  ; pad to 512 bytes
 
 ; === Stack (256 bytes at start of load image) ===
+load_image:
     times 0x100 db 0
+stack_end:
 
-; === Data Segment (0x7130 bytes, DS = load_base + 0x10) ===
+; === Data Segment (0x7130 bytes, DS = load_base + DATA_SEG_PARA) ===
+data_start:
 ; sound_enabled: (DS:0x0000)
     db 0x00                                                             ; .
 ; saved_cat_x: (DS:0x0001)
@@ -2170,9 +2180,9 @@ key_cheat equ 0x06cc
     db 0xc0, 0x00, 0xd0, 0x00, 0xe0, 0x00, 0xf0, 0x00, 0x00, 0x01, 0x10, 0x01, 0x20, 0x01, 0x30, 0x01 ; ............ .0.
     db 0xbf, 0xa7, 0x8f, 0x77, 0x5f, 0x47, 0x2f, 0x17, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ; ...w_G/.........
 
-; === Code Segment (CS = load_base + 0x723) ===
+; === Code Segment (CS = load_base + CS_PARA) ===
 ; Size: 0x62EB bytes
-
+code_start:
 
 %include "src/entry.asm"
 %include "src/throw.asm"
@@ -2191,4 +2201,5 @@ key_cheat equ 0x06cc
 %include "src/ui.asm"
 
 
+file_end:
 ; === End ===
