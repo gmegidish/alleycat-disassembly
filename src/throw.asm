@@ -144,8 +144,8 @@ lab_05f3:
     rep movsb
     pop si
     pop di
-    add si,0x2000
-    add di,0x2000
+    add si,cga_bank1_base
+    add di,cga_bank1_base
     mov cx,0x280
     rep movsb
     pop ds

@@ -4,15 +4,15 @@ play_music_note:
     jz lab_53f5
     db 0x2a, 0xe4                       ; sub ah,ah
     int 0x1a                            ; BIOS Timer: Get tick count → CX:DX
-    cmp dx,word [0x5322]
+    cmp dx,word [title_music_tick]
     jz lab_53f5
-    mov word [0x5322],dx
-    mov bx,word [0x5320]
-    mov bl,byte [bx + 0x538c]
+    mov word [title_music_tick],dx
+    mov bx,word [title_music_pos]
+    mov bl,byte [bx + title_music_seq]
     cmp bl,0x66
     jz lab_53dd
     db 0x2a, 0xff                       ; sub bh,bh
-    inc word [0x5320]
+    inc word [title_music_pos]
     cmp bx,0x0
     jnz lab_53e1
 lab_53dd:
@@ -21,7 +21,7 @@ lab_53dd:
 lab_53e1:
     mov al,0xb6
     out 0x43,al                         ; PIT: control word (Ch2 square wave (speaker))
-    mov ax,word [bx + 0x5324]
+    mov ax,word [bx + title_music_freqs]
     out 0x42,al                         ; PIT Ch2: speaker frequency data
     db 0x8a, 0xc4                       ; mov al,ah
     out 0x42,al                         ; PIT Ch2: speaker frequency data
@@ -44,21 +44,21 @@ render_sprites:
     db 0x81, 0xe3, 0x07, 0x00           ; and bx,0x7
     shl bx,0x1
     db 0x8b, 0xc3                       ; mov ax,bx
-    mov bx,word [bx + 0x5908]
+    mov bx,word [bx + sprite_list_ptrs]
     mov cl,0x3
     shl ax,cl
-    mov [0x5918],ax
+    mov [sprite_variant_base],ax
 lab_541c:
     mov di,word [bx]
     db 0x81, 0xff, 0xff, 0xff           ; cmp di,0xffff
     jz lab_5447
     call random                           ;undefined random()
     db 0x81, 0xe2, 0x0e, 0x00           ; and dx,0xe
-    add dx,word [0x5918]
+    add dx,word [sprite_variant_base]
     db 0x8b, 0xf2                       ; mov si,dx
-    mov si,word [si + 0x5888]
-    mov cx,word [si + 0x5858]
-    mov si,word [si + 0x584c]
+    mov si,word [si + sprite_variant_table]
+    mov cx,word [si + sprite_dims_table]
+    mov si,word [si + sprite_data_ptrs]
     push bx
     call blit_to_cga                           ;undefined blit_to_cga()
     pop bx
@@ -70,11 +70,11 @@ lab_5447:
 
 ; --- init_chase_sound ---
 init_chase_sound:
-    mov byte [0x5b0f],0xc
-    mov word [0x5b0c],0x1
-    mov word [0x5b12],0x1ff
-    mov word [0x5b0a],0xf
-    mov byte [0x5b0e],0x1
+    mov byte [chase_intro_ticks],0xc
+    mov word [chase_toggle],0x1
+    mov word [chase_sweep_freq],0x1ff
+    mov word [chase_freq_mask],0xf
+    mov byte [chase_tick_div],0x1
     ret
 
 ; --- play_sound ---
@@ -88,48 +88,48 @@ play_sound:
     jz lab_54f8
     db 0x2a, 0xe4                       ; sub ah,ah
     int 0x1a                            ; BIOS Timer: Get tick count → CX:DX
-    cmp byte [0x5b0f],0x0
+    cmp byte [chase_intro_ticks],0x0
     jnz lab_54a6
-    cmp dx,word [0x5b10]
+    cmp dx,word [chase_last_tick]
     jz lab_54a5
-    mov word [0x5b10],dx
+    mov word [chase_last_tick],dx
     mov al,0xb6
     out 0x43,al                         ; PIT: control word (Ch2 square wave (speaker))
-    mov ax,[0x5b12]
+    mov ax,[chase_sweep_freq]
     and ax,0x1ff
     add ax,0xc8
     call set_speaker_freq                           ;undefined set_speaker_freq()
-    sub word [0x5b12],0x4b
+    sub word [chase_sweep_freq],0x4b
 lab_54a5:
     ret
 lab_54a6:
-    cmp dx,word [0x5b10]
+    cmp dx,word [chase_last_tick]
     jz lab_54b4
-    mov word [0x5b10],dx
-    dec byte [0x5b0f]
+    mov word [chase_last_tick],dx
+    dec byte [chase_intro_ticks]
 lab_54b4:
-    dec byte [0x5b0e]
+    dec byte [chase_tick_div]
     jnz lab_54f7
     mov al,0x1
     cmp byte [rom_id],0xfd
     jz lab_54c5
     shl al,0x1
 lab_54c5:
-    mov [0x5b0e],al
+    mov [chase_tick_div],al
     call random                           ;undefined random()
     cmp dl,0x4
     ja lab_54d4
-    inc word [0x5b0c]
+    inc word [chase_toggle]
 lab_54d4:
-    test word [0x5b0c],0x1
+    test word [chase_toggle],0x1
     jz lab_54e1
-    add word [0x5b0a],0x7
+    add word [chase_freq_mask],0x7
 lab_54e1:
     mov al,0xb6
     out 0x43,al                         ; PIT: control word (Ch2 square wave (speaker))
     call random                           ;undefined random()
     db 0x8b, 0xc2                       ; mov ax,dx
-    and ax,word [0x5b0a]
+    and ax,word [chase_freq_mask]
     and ax,0x1ff
     add ax,0x190
     call set_speaker_freq                           ;undefined set_speaker_freq()
@@ -138,27 +138,27 @@ lab_54f7:
 lab_54f8:
     db 0x2a, 0xe4                       ; sub ah,ah
     int 0x1a                            ; BIOS Timer: Get tick count → CX:DX
-    cmp byte [0x5920],0x0
+    cmp byte [tone_duration],0x0
     jz lab_5522
-    cmp dx,word [0x5921]
+    cmp dx,word [tone_last_tick]
     jz lab_5562
-    mov word [0x5921],dx
-    dec byte [0x5920]
+    mov word [tone_last_tick],dx
+    dec byte [tone_duration]
     jz lab_551e
     mov al,0xb6
     out 0x43,al                         ; PIT: control word (Ch2 square wave (speaker))
-    mov ax,[0x5923]
+    mov ax,[tone_freq]
     call set_speaker_freq                           ;undefined set_speaker_freq()
     ret
 lab_551e:
     call silence_speaker                           ;undefined silence_speaker()
     ret
 lab_5522:
-    cmp dx,word [0x5925]
+    cmp dx,word [ambient_last_tick]
     jz lab_5562
     mov si,0x3
     mov al,[enemy_chasing]
-    or al,byte [0x5b07]
+    or al,byte [post_explode_ticks]
     jnz lab_5549
     mov si,0x1
     cmp word [level_number],0x0
@@ -171,32 +171,32 @@ lab_5549:
     db 0x8b, 0xfe                       ; mov di,si
     shl di,0x1
     mov al,[0x584]
-    or al,byte [0x5b07]
+    or al,byte [post_explode_ticks]
     jnz lab_5563
     db 0x8b, 0xc2                       ; mov ax,dx
-    sub ax,word [0x5925]
-    cmp ax,word [di + 0x59f2]
+    sub ax,word [ambient_last_tick]
+    cmp ax,word [di + ambient_tempo_table]
     jnc lab_5563
 lab_5562:
     ret
 lab_5563:
-    mov word [0x5925],dx
+    mov word [ambient_last_tick],dx
     cmp byte [enemy_chasing],0x0
     jnz lab_5579
-    cmp byte [0x5b07],0x0
+    cmp byte [post_explode_ticks],0x0
     jz lab_559e
-    dec byte [0x5b07]
+    dec byte [post_explode_ticks]
 lab_5579:
-    mov word [0x592e],0x1200
-    mov bx,word [0x59ba]
+    mov word [ambient_duration],0x1200
+    mov bx,word [walk_note_index]
     cmp bx,0x6
     jc lab_558e
     db 0x2b, 0xdb                       ; sub bx,bx
-    mov word [0x59ba],bx
+    mov word [walk_note_index],bx
 lab_558e:
-    add word [0x59ba],0x2
-    mov ax,word [bx + 0x5a44]
-    mov [0x592a],ax
+    add word [walk_note_index],0x2
+    mov ax,word [bx + walk_note_table]
+    mov [ambient_freq],ax
     call play_timed_tone                           ;undefined play_timed_tone()
     ret
 lab_559e:
@@ -207,27 +207,27 @@ lab_559e:
     mov cl,0x4
     shl ax,cl
     add ax,0x200
-    mov [0x592a],ax
-    mov word [0x592e],0x1800
+    mov [ambient_freq],ax
+    mov word [ambient_duration],0x1800
     jmp near lab_568d
 lab_55bb:
-    mov ax,word [di + 0x5a02]
-    mov [0x592e],ax
-    shr byte [0x5927],0x1
+    mov ax,word [di + ambient_base_dur]
+    mov [ambient_duration],ax
+    shr byte [ambient_rhythm],0x1
     jnc lab_5623
-    mov word [0x592e],0x1000
-    mov byte [0x5927],0x80
-    inc byte [0x5928]
-    mov al,[0x5928]
-    and al,byte [si + 0x59fa]
+    mov word [ambient_duration],0x1000
+    mov byte [ambient_rhythm],0x80
+    inc byte [ambient_note_pos]
+    mov al,[ambient_note_pos]
+    and al,byte [si + ambient_note_mask]
     jnz lab_5616
-    mov dl,byte [si + 0x5a0a]
-    add byte [0x5929],dl
+    mov dl,byte [si + ambient_pitch_step]
+    add byte [ambient_pitch_acc],dl
     call random                           ;undefined random()
-    cmp dl,byte [si + 0x5a0c]
+    cmp dl,byte [si + ambient_rand_thresh]
     ja lab_55f8
     and dl,0x7
-    mov byte [0x592d],dl
+    mov byte [ambient_ornament],dl
 lab_55f8:
     call random                           ;undefined random()
     and dx,0xff
@@ -238,46 +238,46 @@ lab_55f8:
     mov cl,0xff
     add dx,0x300
 lab_560e:
-    mov word [0x592a],dx
-    mov byte [0x592c],cl
+    mov word [ambient_freq],dx
+    mov byte [ambient_direction],cl
 lab_5616:
-    mov ah,byte [0x5929]
-    and ah,byte [si + 0x59fc]
+    mov ah,byte [ambient_pitch_acc]
+    and ah,byte [si + ambient_octave_mask]
     db 0x0a, 0xc4                       ; or al,ah
-    mov [0x5928],al
+    mov [ambient_note_pos],al
 lab_5623:
-    cmp byte [0x592c],0xff
+    cmp byte [ambient_direction],0xff
     jz lab_5640
-    add word [0x5a54],0x2
-    mov bx,word [0x5a54]
+    add word [walk_seq_index],0x2
+    mov bx,word [walk_seq_index]
     db 0x81, 0xe3, 0x0e, 0x00           ; and bx,0xe
-    mov ax,word [bx + 0x5a44]
-    mov [0x592a],ax
+    mov ax,word [bx + walk_note_table]
+    mov [ambient_freq],ax
     jmp short lab_5653
 lab_5640:
-    cmp word [0x592a],0xc8
+    cmp word [ambient_freq],0xc8
     ja lab_564e
-    mov word [0x592a],0x500
+    mov word [ambient_freq],0x500
 lab_564e:
-    sub word [0x592a],0x19
+    sub word [ambient_freq],0x19
 lab_5653:
     cmp byte [0x584],0x0
     jz lab_5667
-    mov word [0x592e],0x2000
-    mov byte [0x592c],0xff
+    mov word [ambient_duration],0x2000
+    mov byte [ambient_direction],0xff
     jnz lab_568d
 lab_5667:
-    mov bl,byte [0x5928]
+    mov bl,byte [ambient_note_pos]
     db 0x2a, 0xff                       ; sub bh,bh
-    add bx,word [di + 0x59fe]
-    mov al,byte [bx + 0x59c2]
-    and al,byte [0x5927]
+    add bx,word [di + ambient_rhythm_base]
+    mov al,byte [bx + ambient_rhythm_pattern]
+    and al,byte [ambient_rhythm]
     jnz lab_568d
-    cmp byte [0x592d],0x0
+    cmp byte [ambient_ornament],0x0
     jz lab_5690
-    dec byte [0x592d]
-    mov ax,word [di + 0x5a06]
-    mov [0x592e],ax
+    dec byte [ambient_ornament]
+    mov ax,word [di + ambient_accent_dur]
+    mov [ambient_duration],ax
 lab_568d:
     call play_timed_tone                           ;undefined play_timed_tone()
 lab_5690:
@@ -289,35 +289,35 @@ play_explosion_effect:
     int byte 0x10
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
-    mov [0x5ae2],dx
-    mov word [0x5ae4],0x0
+    mov [explode_start_tick],dx
+    mov word [explode_counter],0x0
     mov al,0x2
     cmp byte [0x697],0xfd
     jnz short lab_56b4
     db 0xd0, 0xe8                       ; shr al,0x0
 lab_56b4:
-    mov [0x5b06],al
+    mov [explode_speed_shift],al
 lab_56b7:
     cmp byte [0x0],0x0
     jz short lab_56d8
-    inc word [0x5ae4]
-    mov bx,[0x5ae4]
-    mov cl,[0x5b06]
+    inc word [explode_counter]
+    mov bx,[explode_counter]
+    mov cl,[explode_speed_shift]
     shr bx,cl
     db 0x81, 0xe3, 0x1f, 0x00           ; and bx,0x1f
     in al,byte 0x61
-    xor al,[bx+0x5ae6]
+    xor al,[bx+explode_pattern]
     out byte 0x61,al
 lab_56d8:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
-    sub dx,[0x5ae2]
+    sub dx,[explode_start_tick]
     cmp dx,0x2
     jb short lab_56b7
     mov ah,0xb
     db 0x2b, 0xdb                       ; sub bx,bx
     int byte 0x10
-    mov byte [0x5b07],0xc
+    mov byte [post_explode_ticks],0xc
     call silence_speaker
     ret
 init_buzz_sound:
@@ -326,11 +326,11 @@ init_buzz_sound:
     jnz short lab_5700
     db 0xd1, 0xe0                       ; shl ax,0x0
 lab_5700:
-    mov [0x5ad0],ax
+    mov [buzz_phase],ax
     ret
 update_buzz_sound:
-    inc word [0x5ad0]
-    mov bx,[0x5ad0]
+    inc word [buzz_phase]
+    mov bx,[buzz_phase]
     db 0x8b, 0xd3                       ; mov dx,bx
     mov cl,0x9
     shr dx,cl
@@ -338,7 +338,7 @@ update_buzz_sound:
     and cl,0xf
     shr bx,cl
     db 0x81, 0xe3, 0x0f, 0x00           ; and bx,0xf
-    mov dl,[bx+0x5ad2]
+    mov dl,[bx+buzz_pattern]
     and dl,[0x0]
     in al,byte 0x61
     and al,0xfc
@@ -346,22 +346,22 @@ update_buzz_sound:
     out byte 0x61,al
     ret
 play_swoop_sound:
-    mov word [0x5acb],0x1f4
+    mov word [swoop_freq],0x1f4
 lab_5734:
     call play_delayed_tone
-    sub word [0x5acb],0x1e
-    cmp word [0x5acb],0xc8
+    sub word [swoop_freq],0x1e
+    cmp word [swoop_freq],0xc8
     ja short lab_5734
-    mov word [0x5acb],0x1f4
+    mov word [swoop_freq],0x1f4
 lab_574a:
     call play_delayed_tone
-    sub word [0x5acb],0x14
-    cmp word [0x5acb],0x12c
+    sub word [swoop_freq],0x14
+    cmp word [swoop_freq],0x12c
     ja short lab_574a
 lab_575a:
     call play_delayed_tone
-    add word [0x5acb],0x1e
-    cmp word [0x5acb],0x320
+    add word [swoop_freq],0x1e
+    cmp word [swoop_freq],0x320
     jb short lab_575a
     call silence_speaker
     ret
@@ -376,7 +376,7 @@ lab_577a:
     jz short lab_5796
     mov al,0xb6
     out byte 0x43,al
-    mov ax,[0x5acb]
+    mov ax,[swoop_freq]
     out byte 0x42,al
     db 0x8a, 0xc4                       ; mov al,ah
     out byte 0x42,al
@@ -389,20 +389,20 @@ lab_5796:
 ; --- reset_noise ---
 reset_noise:
     call silence_speaker                           ;undefined silence_speaker()
-    mov byte [0x5acf],0x0
-    mov word [0x5acd],0x8
+    mov byte [noise_counter],0x0
+    mov word [noise_period],0x8
     ret
 
 ; --- update_noise ---
 update_noise:
-    inc byte [0x5acf]
+    inc byte [noise_counter]
     db 0x2a, 0xd2                       ; sub dl,dl
-    mov al,[0x5acf]
+    mov al,[noise_counter]
     and al,0x3f
     jnz lab_57b7
-    inc word [0x5acd]
+    inc word [noise_period]
 lab_57b7:
-    mov bx,word [0x5acd]
+    mov bx,word [noise_period]
     mov cl,0x2
     shr bx,cl
     and bl,0x1f
@@ -417,10 +417,10 @@ lab_57c8:
     out 0x61,al                         ; Speaker control (bits 0-1: gate/enable)
     ret
 init_result_melody:
-    mov word [0x5a85],0x0
+    mov word [result_melody_pos],0x0
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
-    mov [0x5a83],dx
+    mov [result_melody_tick],dx
     ret
 play_result_note:
     cmp byte [0x0],0x0
@@ -428,21 +428,21 @@ play_result_note:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
     db 0x8b, 0xc2                       ; mov ax,dx
-    sub ax,[0x5a83]
+    sub ax,[result_melody_tick]
     db 0x3d, 0x02, 0x00                 ; cmp ax,0x2
     jb short lab_5828
-    mov [0x5a83],dx
-    mov bx,[0x5a85]
-    add word [0x5a85],0x2
+    mov [result_melody_tick],dx
+    mov bx,[result_melody_pos]
+    add word [result_melody_pos],0x2
     cmp byte [0x552],0x0
     jz short lab_581b
-    mov ax,[bx+0x5aa3]
+    mov ax,[bx+result_melody_bonus]
     db 0x3d, 0x00, 0x00                 ; cmp ax,0x0
     jnz short lab_581f
     call silence_speaker
     ret
 lab_581b:
-    mov ax,[bx+0x5a87]
+    mov ax,[bx+result_melody_normal]
 lab_581f:
     push ax
     mov al,0xb6
@@ -452,29 +452,29 @@ lab_581f:
 lab_5828:
     ret
 init_level_melody:
-    mov word [0x5a62],0x0
-    mov byte [0x5a82],0x0
+    mov word [level_melody_pos],0x0
+    mov byte [level_note_toggle],0x0
     ret
 play_level_note:
     cmp byte [0x0],0x0
     jz short lab_5846
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
-    cmp dx,[0x5a80]
+    cmp dx,[level_note_tick]
     jnz short lab_5847
 lab_5846:
     ret
 lab_5847:
-    mov [0x5a80],dx
-    inc byte [0x5a82]
+    mov [level_note_tick],dx
+    inc byte [level_note_toggle]
     mov al,0xb6
     out byte 0x43,al
-    mov bx,[0x5a62]
-    test byte [0x5a82],0x1
+    mov bx,[level_melody_pos]
+    test byte [level_note_toggle],0x1
     jnz short lab_5861
     add bx,0x2
 lab_5861:
-    mov ax,[bx+0x5a64]
+    mov ax,[bx+level_melody_notes]
     call set_speaker_freq
     ret
 play_melody_step:
@@ -484,9 +484,9 @@ play_melody_step:
     push ax
     mov al,0xb6
     out byte 0x43,al
-    mov bx,[0x5a62]
-    add word [0x5a62],0x2
-    mov ax,[bx+0x5a64]
+    mov bx,[level_melody_pos]
+    add word [level_melody_pos],0x2
+    mov ax,[bx+level_melody_notes]
     call set_speaker_freq
     pop ax
     pop bx
@@ -512,10 +512,10 @@ play_wipe_note:
     push dx
     mov al,0xb6
     out byte 0x43,al
-    mov bx,[0x5a56]
+    mov bx,[wipe_note_index]
     db 0x81, 0xe3, 0x06, 0x00           ; and bx,0x6
-    add word [0x5a56],0x2
-    mov ax,[bx+0x5a5a]
+    add word [wipe_note_index],0x2
+    mov ax,[bx+wipe_note_table]
     call set_speaker_freq
     pop dx
     pop cx
@@ -527,17 +527,17 @@ lab_58bc:
 ; Resets the background music sequencer state. Sets initial tempo, position,
 ; and playback flags for the music engine.
 init_music:
-    mov byte [0x5927],0x80
-    mov byte [0x5928],0x0
-    mov byte [0x5929],0x0
-    mov word [0x592a],0x500
-    mov byte [0x592c],0xff
-    mov byte [0x592d],0x0
-    mov byte [0x5920],0x0
-    mov byte [0x5b07],0x0
-    mov word [0x5b08],0x0
-    mov word [0x5b0c],0x1
-    mov byte [0x5b0e],0x1
+    mov byte [ambient_rhythm],0x80
+    mov byte [ambient_note_pos],0x0
+    mov byte [ambient_pitch_acc],0x0
+    mov word [ambient_freq],0x500
+    mov byte [ambient_direction],0xff
+    mov byte [ambient_ornament],0x0
+    mov byte [tone_duration],0x0
+    mov byte [post_explode_ticks],0x0
+    mov word [meow_pitch_offset],0x0
+    mov word [chase_toggle],0x1
+    mov byte [chase_tick_div],0x1
     ret
 
 ; --- play_catch_sound ---
@@ -578,22 +578,22 @@ play_death_melody:
 start_tone:
     cmp byte [sound_enabled],0x0
     jz lab_595c
-    mov word [0x5923],bx
+    mov word [tone_freq],bx
     push ax
     mov al,0xb6
     out 0x43,al                         ; PIT: control word (Ch2 square wave (speaker))
     pop ax
     call set_speaker_freq                           ;undefined set_speaker_freq()
-    mov byte [0x5920],0x2
+    mov byte [tone_duration],0x2
     db 0x2a, 0xe4                       ; sub ah,ah
     int 0x1a                            ; BIOS Timer: Get tick count → CX:DX
-    mov word [0x5921],dx
+    mov word [tone_last_tick],dx
 lab_595c:
     ret
 play_random_chirp:
     cmp byte [0x0],0x0
     jz short lab_597e
-    cmp byte [0x5920],0x0
+    cmp byte [tone_duration],0x0
     jnz short lab_597e
     call random
     db 0x8b, 0xc2                       ; mov ax,dx
@@ -610,12 +610,12 @@ play_meow_sound:
     cmp byte [sound_enabled],0x0
     jz lab_59a2
     mov ax,0x1200
-    mov bx,0x1312
-    add ax,word [0x5b08]
-    add bx,word [0x5b08]
-    add word [0x5b08],0x15e
+    mov bx,meow_sound_data
+    add ax,word [meow_pitch_offset]
+    add bx,word [meow_pitch_offset]
+    add word [meow_pitch_offset],0x15e
     call start_tone                           ;undefined start_tone()
-    mov byte [0x5b07],0x18
+    mov byte [post_explode_ticks],0x18
 lab_59a2:
     ret
 
@@ -648,10 +648,10 @@ play_hiss_sound:
     out 0x61,al                         ; Speaker control (bits 0-1: gate/enable)
     db 0x2a, 0xe4                       ; sub ah,ah
     int 0x1a                            ; BIOS Timer: Get tick count → CX:DX
-    mov word [0x5a40],dx
-    mov word [0x5a42],0x0
+    mov word [hiss_start_tick],dx
+    mov word [hiss_phase],0x0
 lab_59df:
-    mov ax,[0x5a42]
+    mov ax,[hiss_phase]
     mov cl,0x6
     shr ax,cl
     jnz lab_59e9
@@ -663,7 +663,7 @@ lab_59eb:
     db 0x2a, 0xe4                       ; sub ah,ah
     int 0x1a                            ; BIOS Timer: Get tick count → CX:DX
     pop cx
-    sub dx,word [0x5a40]
+    sub dx,word [hiss_start_tick]
     cmp dx,0x2
     jc lab_59eb
     cmp dx,0x7
@@ -675,7 +675,7 @@ lab_59eb:
     in al,0x61                          ; Read speaker/system status
     db 0x32, 0xc2                       ; xor al,dl
     out 0x61,al                         ; Speaker control (bits 0-1: gate/enable)
-    add word [0x5a42],0x7
+    add word [hiss_phase],0x7
     jmp short lab_59df
 lab_5a18:
     call silence_speaker                           ;undefined silence_speaker()
@@ -686,7 +686,7 @@ play_falling_sound:
     cmp byte [sound_enabled],0x0
     jz lab_5a34
     call read_pit_timer                           ;undefined read_pit_timer()
-    mov bx,word [0x5a16]
+    mov bx,word [fall_snd_pit_prev]
     db 0x2b, 0xd8                       ; sub bx,ax
     jc lab_5a35
     cmp bx,0x260
@@ -694,13 +694,13 @@ play_falling_sound:
 lab_5a34:
     ret
 lab_5a35:
-    mov [0x5a16],ax
+    mov [fall_snd_pit_prev],ax
     mov al,0xb6
     out 0x43,al                         ; PIT: control word (Ch2 square wave (speaker))
-    inc word [0x5a18]
-    mov bx,word [0x5a18]
+    inc word [fall_snd_wobble_idx]
+    mov bx,word [fall_snd_wobble_idx]
     db 0x81, 0xe3, 0x1e, 0x00           ; and bx,0x1e
-    mov ax,[0x5a3c]
+    mov ax,[fall_sound_x]
     and ax,0x3ff
     cmp ax,0x180
     jc lab_5a59
@@ -710,17 +710,17 @@ lab_5a35:
 lab_5a59:
     shr ax,0x1
     shr ax,0x1
-    add ax,word [bx + 0x5a1a]
+    add ax,word [bx + fall_snd_wobble]
     mov bx,0x1
     cmp byte [rom_id],0xfd
     jnz lab_5a6d
     shl bl,0x1
 lab_5a6d:
-    add word [0x5a3e],bx
+    add word [fall_sound_y],bx
     shl bx,0x1
     shl bx,0x1
-    add word [0x5a3c],bx
-    mov dx,word [0x5a3e]
+    add word [fall_sound_x],bx
+    mov dx,word [fall_sound_y]
     mov cl,0x3
     shr dx,cl
     db 0x03, 0xc2                       ; add ax,dx
@@ -738,12 +738,12 @@ play_random_noise:
     jz lab_5aa1
     db 0x2a, 0xe4                       ; sub ah,ah
     int 0x1a                            ; BIOS Timer: Get tick count → CX:DX
-    cmp dx,word [0x5a14]
+    cmp dx,word [rand_noise_tick]
     jnz lab_5aa2
 lab_5aa1:
     ret
 lab_5aa2:
-    mov word [0x5a14],dx
+    mov word [rand_noise_tick],dx
     mov al,0xb6
     out 0x43,al                         ; PIT: control word (Ch2 square wave (speaker))
     call random                           ;undefined random()
@@ -760,19 +760,19 @@ lab_5aa2:
 
 ; --- play_crash_sound ---
 play_crash_sound:
-    mov word [0x5a12],0x338
+    mov word [crash_base_freq],0x338
     db 0x2a, 0xe4                       ; sub ah,ah
     int 0x1a                            ; BIOS Timer: Get tick count → CX:DX
-    mov word [0x5a10],dx
+    mov word [crash_start_tick],dx
     call read_pit_timer                           ;undefined read_pit_timer()
-    mov [0x5a0e],ax
+    mov [crash_pit_prev],ax
 lab_5ad6:
     call read_pit_timer                           ;undefined read_pit_timer()
     db 0x8b, 0xd0                       ; mov dx,ax
-    sub ax,word [0x5a0e]
+    sub ax,word [crash_pit_prev]
     cmp ax,0x9c40
     jc lab_5b10
-    mov word [0x5a0e],dx
+    mov word [crash_pit_prev],dx
     cmp byte [sound_enabled],0x0
     jz lab_5b10
     mov al,0xb6
@@ -780,8 +780,8 @@ lab_5ad6:
     call random                           ;undefined random()
     db 0x8b, 0xc2                       ; mov ax,dx
     and ax,0x7ff
-    add ax,word [0x5a12]
-    sub word [0x5a12],0x2
+    add ax,word [crash_base_freq]
+    sub word [crash_base_freq],0x2
     out 0x42,al                         ; PIT Ch2: speaker frequency data
     db 0x8a, 0xc4                       ; mov al,ah
     out 0x42,al                         ; PIT Ch2: speaker frequency data
@@ -791,7 +791,7 @@ lab_5ad6:
 lab_5b10:
     db 0x2a, 0xe4                       ; sub ah,ah
     int 0x1a                            ; BIOS Timer: Get tick count → CX:DX
-    sub dx,word [0x5a10]
+    sub dx,word [crash_start_tick]
     cmp dx,0x2
     jc lab_5ad6
     call silence_speaker                           ;undefined silence_speaker()
@@ -810,7 +810,7 @@ silence_speaker:
 play_timed_tone:
     mov al,0xb6
     out 0x43,al                         ; PIT: control word (Ch2 square wave (speaker))
-    mov ax,[0x592a]
+    mov ax,[ambient_freq]
     out 0x42,al                         ; PIT Ch2: speaker frequency data
     db 0x8a, 0xc4                       ; mov al,ah
     out 0x42,al                         ; PIT Ch2: speaker frequency data
@@ -823,17 +823,17 @@ lab_5b40:
     call read_pit_timer                           ;undefined read_pit_timer()
     db 0x8b, 0xd1                       ; mov dx,cx
     db 0x2b, 0xd0                       ; sub dx,ax
-    cmp dx,word [0x592e]
+    cmp dx,word [ambient_duration]
     jc lab_5b40
     in al,0x61                          ; Read speaker/system status
     and al,0xfc
     out 0x61,al                         ; Speaker control (bits 0-1: gate/enable)
     ret
 init_victory_melody:
-    mov word [0x59be],0x0
+    mov word [victory_melody_pos],0x0
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
-    mov [0x59c0],dx
+    mov [victory_last_tick],dx
     ret
 play_victory_note:
     cmp byte [0x0],0x0
@@ -841,24 +841,24 @@ play_victory_note:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
     db 0x8b, 0xc2                       ; mov ax,dx
-    sub ax,[0x59c0]
+    sub ax,[victory_last_tick]
     db 0x3d, 0x02, 0x00                 ; cmp ax,0x2
     jnb short lab_5b7a
 lab_5b79:
     ret
 lab_5b7a:
-    mov [0x59c0],dx
-    mov bx,[0x59be]
+    mov [victory_last_tick],dx
+    mov bx,[victory_melody_pos]
     and bx,0xfe
     cmp bx,0x86
     jb short lab_5b92
     db 0x2b, 0xdb                       ; sub bx,bx
-    mov [0x59be],bx
+    mov [victory_melody_pos],bx
 lab_5b92:
-    add word [0x59be],0x2
-    mov ax,[bx+0x5934]
-    mov cx,[0x59bc]
-    mov [0x59bc],ax
+    add word [victory_melody_pos],0x2
+    mov ax,[bx+victory_melody]
+    mov cx,[victory_prev_freq]
+    mov [victory_prev_freq],ax
     db 0x3b, 0xc1                       ; cmp ax,cx
     jnz short lab_5baa
     call silence_speaker
@@ -879,7 +879,7 @@ play_full_victory:
     cmp byte [0x0],0x0
     jz short lab_5bd0
     call play_victory_note
-    cmp word [0x59be],0x7c
+    cmp word [victory_melody_pos],0x7c
     jb short play_full_victory
 lab_5bd0:
     ret
@@ -894,15 +894,15 @@ lab_5bd0:
 show_extra_life:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
-    mov [0x5f66],dx
-    mov word [0x5f60],0x0
+    mov [extralife_tick],dx
+    mov word [extralife_anim_step],0x0
 lab_5bee:
     mov ax,0xb800
     mov es,ax
-    mov bx,[0x5f60]
-    add word [0x5f60],0x2
+    mov bx,[extralife_anim_step]
+    add word [extralife_anim_step],0x2
     db 0x81, 0xe3, 0x02, 0x00           ; and bx,0x2
-    mov si,[bx+0x5f62]
+    mov si,[bx+extralife_sprites]
     mov di,0xa74
     mov cx,0x4404
     call blit_to_cga
@@ -911,28 +911,28 @@ lab_5c0d:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
     db 0x8b, 0xc2                       ; mov ax,dx
-    sub ax,[0x5f66]
+    sub ax,[extralife_tick]
     db 0x3d, 0x04, 0x00                 ; cmp ax,0x4
     jb short lab_5c0d
-    mov [0x5f66],dx
-    cmp word [0x5f60],0x4
+    mov [extralife_tick],dx
+    cmp word [extralife_anim_step],0x4
     jnz short lab_5c36
-    mov si,0x5f68
+    mov si,extralife_icon_data
     mov di,0x668
     mov cx,0x1004
     call blit_to_cga
 lab_5c36:
-    mov bx,[0x5f60]
+    mov bx,[extralife_anim_step]
     sub bx,0x8
     jb short lab_5c51
     cmp bx,0x6
     jnb short lab_5c51
-    mov si,0x5fe8
-    mov di,[bx+0x60e4]
+    mov si,extralife_text_data
+    mov di,[bx+extralife_text_pos]
     mov cx,0x1506
     call blit_to_cga
 lab_5c51:
-    cmp word [0x5f60],0x10
+    cmp word [extralife_anim_step],0x10
     jb short lab_5bee
     call silence_speaker
     ret

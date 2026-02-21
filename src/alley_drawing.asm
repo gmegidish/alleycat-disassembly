@@ -11,11 +11,11 @@ clear_screen:
     mov ax,0xaaaa
     mov cx,0xfa0
     rep stosw
-    mov di,0x2000
+    mov di,cga_bank1_base
     mov cx,0xfa0
     rep stosw
     call draw_alley_details                           ;undefined draw_alley_details()
-    mov bx,0x28a0
+    mov bx,alley_base_block_list
     db 0x2b, 0xc0                       ; sub ax,ax
     call draw_block_list                           ;undefined draw_block_list()
     call draw_difficulty_icon                           ;undefined draw_difficulty_icon()
@@ -33,11 +33,11 @@ draw_alley_scene:
     mov ax,0xaaaa
     mov cx,0xfa0
     rep stosw
-    mov di,0x2000
+    mov di,cga_bank1_base
     mov cx,0xfa0
     rep stosw
     call draw_alley_details                           ;undefined draw_alley_details()
-    mov bx,0x28a0
+    mov bx,alley_base_block_list
     db 0x2b, 0xc0                       ; sub ax,ax
     call draw_block_list                           ;undefined draw_block_list()
     call draw_difficulty_icon                           ;undefined draw_difficulty_icon()
@@ -55,7 +55,7 @@ draw_difficulty_icon:
     db 0x81, 0xe3, 0x03, 0x00           ; and bx,0x3
     shl bl,0x1
     mov si,word [bx + diff_icon_table]
-    mov di,0x1902
+    mov di,diff_icon_cga_pos
     mov cx,0x801
     call blit_to_cga                           ;undefined blit_to_cga()
     ret
@@ -161,7 +161,7 @@ lab_2b62:
 draw_window_strip:
     mov byte [draw_loop_count],0x4
 lab_2b76:
-    mov si,0x2680
+    mov si,window_sprite_data
     mov cx,0x1005
     push di
     call blit_to_cga                           ;undefined blit_to_cga()
@@ -201,12 +201,12 @@ lab_2bb3:
     call blit_to_cga                           ;undefined blit_to_cga()
     jmp short lab_2ba4
 lab_2bd2:
-    mov di,0x1180
+    mov di,sidewalk_fill_pos
     mov ax,0x5655
     mov cx,0x500
     cld
     rep stosw
-    mov di,0x3180
+    mov di,dat_3180
     mov cx,0x500
     rep stosw
     mov word [draw_pos_tmp],0x2944
@@ -231,7 +231,7 @@ lab_2c20:
     db 0x81, 0xe2, 0x3e, 0x00           ; and dx,0x3e
     add dx,0x3a98
     db 0x8b, 0xfa                       ; mov di,dx
-    mov si,0x296c
+    mov si,ground_extra_sprite
     mov cx,0x501
     call blit_to_cga                           ;undefined blit_to_cga()
     dec byte [draw_loop_count]
@@ -248,19 +248,19 @@ draw_building:
 lab_2c4b:
     mov [draw_loop_count],al
     add word [draw_pos_tmp],0x1e0
-    mov si,0x2976
+    mov si,building_top_sprite
     mov cx,0xc05
     call blit_to_cga                           ;undefined blit_to_cga()
 lab_2c5d:
     mov di,word [draw_pos_tmp]
     add word [draw_pos_tmp],0x140
-    mov si,0x29ee
+    mov si,building_mid_sprite
     mov cx,0x804
     call blit_to_cga                           ;undefined blit_to_cga()
     dec byte [draw_loop_count]
     jnz lab_2c5d
     mov di,word [draw_pos_tmp]
-    mov si,0x2a2e
+    mov si,building_bottom_sprite
     mov cx,0xb04
     call blit_to_cga                           ;undefined blit_to_cga()
     ret

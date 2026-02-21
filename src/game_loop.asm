@@ -53,9 +53,9 @@ setup_level:
     jmp short lab_07bf
     db 0x90
 lab_07b5:
-    mov dl,byte [bx + 0x5e9]
+    mov dl,byte [bx + level_start_y_table]
     shl bl,0x1
-    mov cx,word [bx + 0x5d9]
+    mov cx,word [bx + level_start_x_table]
 lab_07bf:
     mov word [cat_x],cx
     mov byte [cat_y],dl
@@ -106,7 +106,7 @@ lab_0805:
 lab_0871:
     ret
 start_auto_walk:
-    mov word [0x592a],0x400
+    mov word [ambient_freq],0x400
     cmp byte [auto_walk],0x0
     jz short lab_0880
     ret
@@ -145,7 +145,7 @@ lab_08b9:
     shr al,cl
     mov [scroll_speed],ax
     mov byte [at_platform],0x0
-    mov byte [0x39e0],0x0
+    mov byte [l3_platform_id],0x0
     mov byte [anim_accumulator],0x1
     mov byte [transition_timer],0x10
     mov byte [auto_walk],0x1
@@ -191,12 +191,12 @@ lab_0926:
     mov [anim_tick_delay],ax
     cmp word [level_number],0x4
     jnz lab_093b
-    cmp byte [0x39e1],0x0
+    cmp byte [l3_door_anim_frame],0x0
     jnz lab_08fc
 lab_093b:
     cmp word [level_number],0x6
     jnz lab_0949
-    cmp byte [0x44bd],0x0
+    cmp byte [dat_44bd],0x0
     jnz lab_08fc
 lab_0949:
     cmp word [level_number],0x2
@@ -207,9 +207,9 @@ lab_0953:
     shl si,0x1
     mov ax,[anim_last_tick]
     sub ax,word [level2_tick]
-    cmp ax,word [si + 0x589]
+    cmp ax,word [si + level2_phase1_ticks]
     jc lab_09d6
-    cmp ax,word [si + 0x599]
+    cmp ax,word [si + level2_death_ticks]
     jc lab_0971
     mov byte [object_hit],0x1
 lab_0971:
@@ -253,13 +253,13 @@ lab_09d6:
     mov si,word [difficulty_level]
     shl si,0x1
     db 0x2b, 0xdb                       ; sub bx,bx
-    cmp ax,word [si + 0x5a9]
+    cmp ax,word [si + level2_color1_ticks]
     jc lab_09f6
     inc bl
-    cmp ax,word [si + 0x5b9]
+    cmp ax,word [si + level2_color2_ticks]
     jc lab_09f6
     mov bl,0x5
-    cmp ax,word [si + 0x5c9]
+    cmp ax,word [si + level2_color3_ticks]
     jc lab_09f6
     dec bl
 lab_09f6:
@@ -292,9 +292,9 @@ lab_0a37:
     shr ax,cl
     mov bx,word [difficulty_level]
     shl bl,0x1
-    cmp ax,word [bx + 0x66c]
+    cmp ax,word [bx + max_swim_speed]
     jbe lab_0a4e
-    mov ax,word [bx + 0x66c]
+    mov ax,word [bx + max_swim_speed]
 lab_0a4e:
     mov [scroll_speed],ax
     call update_scroll                           ;undefined update_scroll()
@@ -322,9 +322,9 @@ lab_0a86:
     mov cl,0x4
     mov bl,byte [anim_counter]
     shr bl,cl
-    cmp bl,byte [si + 0x67c]
+    cmp bl,byte [si + max_dive_depth]
     jbe lab_0aa0
-    mov bl,byte [si + 0x67c]
+    mov bl,byte [si + max_dive_depth]
 lab_0aa0:
     mov al,[in_level_mode]
     cmp al,0x1
@@ -406,9 +406,9 @@ lab_0b53:
     jnz lab_0b64
     add bl,0x4
 lab_0b64:
-    mov ax,word [bx + 0x9a6]
+    mov ax,word [bx + walk_sprite_ptrs]
     mov [cat_sprite_data],ax
-    mov ax,word [bx + 0x9c0]
+    mov ax,word [bx + walk_sprite_dims]
     mov [cat_sprite_dims],ax
     mov al,0x30
     mov cx,0x2bc
@@ -619,8 +619,8 @@ lab_0d73:
     add word [recoil_frame],0x2
     mov bx,word [recoil_frame]
     db 0x81, 0xe3, 0x0e, 0x00           ; and bx,0xe
-    mov ax,word [bx + 0xfc2]
-    mov bx,word [bx + 0xfd2]
+    mov ax,word [bx + recoil_sprite_ptrs]
+    mov bx,word [bx + recoil_sprite_dims_tbl]
     jmp short lab_0da8
 lab_0da1:
     mov ax,[vert_sprite_data]
@@ -772,11 +772,11 @@ lab_0ef1:
     add bl,0x6
 lab_0f14:
     db 0x2a, 0xff                       ; sub bh,bh
-    mov ax,word [bx + 0xfaa]
+    mov ax,word [bx + climb_sprite_ptrs]
     mov [vert_sprite_data],ax
-    mov ax,word [bx + 0xfb6]
+    mov ax,word [bx + climb_sprite_dims]
     mov [vert_sprite_dims],ax
-    mov byte [0x39e0],0x0
+    mov byte [l3_platform_id],0x0
     cmp byte [door_contact],0x0
     jz lab_0f33
     call play_catch_sound                           ;undefined play_catch_sound()

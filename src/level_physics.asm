@@ -1,18 +1,18 @@
 ; --- pick_random_target ---
 pick_random_target:
     mov bx,word [difficulty_level]
-    mov cl,byte [bx + 0x100e]
+    mov cl,byte [bx + floor_door_count]
 lab_15d8:
     call random                           ;undefined random()
     and dl,0x7
     db 0x3a, 0xd1                       ; cmp dl,cl
     ja lab_15d8
-    add dl,byte [bx + 0x1006]
-    cmp dl,byte [0x1028]
+    add dl,byte [bx + floor_first_door]
+    cmp dl,byte [last_target_door]
     jz lab_15d8
-    mov byte [0x1028],dl
+    mov byte [last_target_door],dl
     db 0x8a, 0xda                       ; mov bl,dl
-    mov cl,byte [bx + 0xff0]
+    mov cl,byte [bx + door_position_table]
     mov dl,0x88
     test cl,0x80
     jnz lab_15ff
@@ -69,9 +69,9 @@ check_door_position:
     add cl,0x2
     and cl,0xf8
     mov bx,word [difficulty_level]
-    mov bl,byte [bx + 0x1006]
+    mov bl,byte [bx + floor_first_door]
 lab_1669:
-    mov al,byte [bx + 0xff0]
+    mov al,byte [bx + door_position_table]
     cmp al,0x0
     jnz lab_1678
     mov byte [door_contact],0x0
@@ -112,7 +112,7 @@ lab_16c4:
 
 ; --- check_level_platform ---
 check_level_platform:
-    mov byte [0x39e0],0x0
+    mov byte [l3_platform_id],0x0
     cmp byte [in_level_mode],0x1
     jnz lab_16fc
     mov ax,[entrance_x]
@@ -141,20 +141,20 @@ lab_170e:
     and cl,0xf8
     mov bx,word [level_number]
     shl bx,0x1
-    mov bx,word [bx + 0x1269]
+    mov bx,word [bx + level_platform_index]
 lab_171f:
-    mov ch,byte [bx + 0x1029]
+    mov ch,byte [bx + platform_y_table]
     cmp ch,0x0
     jnz lab_172a
     clc
     ret
 lab_172a:
-    mov al,byte [bx + 0x1089]
-    mov [0x127b],al
+    mov al,byte [bx + platform_type_table]
+    mov [platform_cur_type],al
     shl bl,0x1
-    mov ax,word [bx + 0x11a9]
-    mov [0x1279],ax
-    mov ax,word [bx + 0x10e9]
+    mov ax,word [bx + platform_width_table]
+    mov [platform_cur_width],ax
+    mov ax,word [bx + platform_x_left]
     shr bl,0x1
     inc bx
     db 0x3a, 0xcd                       ; cmp cl,ch
@@ -164,7 +164,7 @@ lab_172a:
     db 0x3b, 0xd0                       ; cmp dx,ax
     jc lab_171f
     mov dx,word [cat_x]
-    sub dx,word [0x1279]
+    sub dx,word [platform_cur_width]
     jnc lab_175d
     db 0x2b, 0xd2                       ; sub dx,dx
 lab_175d:
@@ -174,7 +174,7 @@ lab_175d:
     mov byte [cat_y],ch
     add ch,0x32
     mov byte [cat_y_bottom],ch
-    mov al,[0x127b]
+    mov al,[platform_cur_type]
     mov [at_platform],al
     cmp al,0x0
     jz lab_1780
@@ -188,7 +188,7 @@ lab_1780:
     cmp bx,0x10
     jnc lab_1797
     inc bx
-    mov byte [0x39e0],bl
+    mov byte [l3_platform_id],bl
 lab_1797:
     stc
     ret
@@ -242,7 +242,7 @@ lab_17ee:
     shl cl,0x1
     db 0x2b, 0xc1                       ; sub ax,cx
 lab_17fc:
-    mov bl,byte [bx + 0x1025]
+    mov bl,byte [bx + window_row_offset]
     db 0x8b, 0xf3                       ; mov si,bx
     db 0x8b, 0xd8                       ; mov bx,ax
     add bx,0xa
@@ -267,11 +267,11 @@ lab_1812:
 ; Clears gravity, jump counters, and related state variables.
 ; No inputs or outputs.
 init_player:
-    mov byte [0x1665],0x0
+    mov byte [jump_anim_counter],0x0
     mov byte [gravity_y],0x0
-    mov byte [0x1677],0x0
-    mov byte [0x1678],0x0
-    mov word [0x166c],0x9
+    mov byte [idle_aggro_flag],0x0
+    mov byte [deduct_life],0x0
+    mov word [jump_toss_delay],0x9
     ret
 
 ; --- apply_cat_gravity ---
@@ -286,13 +286,13 @@ apply_cat_gravity:
     jz lab_185c
     db 0x2a, 0xe4                       ; sub ah,ah
     int 0x1a                            ; BIOS Timer: Get tick count → CX:DX
-    cmp dx,word [0x17ec]
+    cmp dx,word [gravity_last_tick]
     jnz lab_185d
 lab_185c:
     ret
 lab_185d:
-    mov word [0x17ec],dx
-    cmp byte [0x1677],0x0
+    mov word [gravity_last_tick],dx
+    cmp byte [idle_aggro_flag],0x0
     jz lab_187f
     mov ax,[gravity_x]
     db 0x25, 0xf8, 0xff                 ; and ax,0xfff8
@@ -300,18 +300,18 @@ lab_185d:
     db 0x81, 0xe3, 0xf8, 0xff           ; and bx,0xfff8
     db 0x3b, 0xc3                       ; cmp ax,bx
     jnz lab_187f
-    mov byte [0x1674],0x0
+    mov byte [gravity_drift_dir],0x0
 lab_187f:
-    inc byte [0x17e9]
-    cmp word [0x17ea],0x1
+    inc byte [gravity_frame]
+    cmp word [gravity_h_speed],0x1
     ja lab_188e
-    dec word [0x17ea]
+    dec word [gravity_h_speed]
 lab_188e:
     mov ax,[gravity_x]
-    mov dx,word [0x17ea]
+    mov dx,word [gravity_h_speed]
     mov cl,0x3
     shr dl,cl
-    cmp byte [0x1674],0x1
+    cmp byte [gravity_drift_dir],0x1
     jc lab_18b5
     jnz lab_18af
     db 0x03, 0xc2                       ; add ax,dx
@@ -326,42 +326,42 @@ lab_18af:
     db 0x2b, 0xc0                       ; sub ax,ax
 lab_18b5:
     mov [gravity_x],ax
-    mov bx,word [0x17df]
-    mov al,[0x17e9]
+    mov bx,word [gravity_cur_dims]
+    mov al,[gravity_frame]
     shr al,0x1
     add al,byte [gravity_y]
     db 0x8a, 0xd0                       ; mov dl,al
-    sub al,byte [0x1676]
+    sub al,byte [gravity_target_height]
     jc lab_18e1
     db 0x2a, 0xf8                       ; sub bh,al
     jz lab_18d3
     jnc lab_18e1
 lab_18d3:
     mov byte [gravity_y],0x0
-    mov byte [0x1678],0x0
+    mov byte [deduct_life],0x0
     call restore_gravity_bg                           ;undefined restore_gravity_bg()
 lab_18e0:
     ret
 lab_18e1:
     mov byte [gravity_y],dl
     mov cx,word [gravity_x]
-    mov word [0x17e1],bx
+    mov word [gravity_save_dims],bx
     call calc_cga_addr                           ;undefined calc_cga_addr()
-    mov [0x17e7],ax
-    cmp byte [0x17e9],0x2
+    mov [gravity_cga_addr],ax
+    cmp byte [gravity_frame],0x2
     jz lab_18fd
     call restore_gravity_bg                           ;undefined restore_gravity_bg()
 lab_18fd:
     call check_dog_collision                           ;undefined check_dog_collision()
     jc lab_18e0
-    mov di,word [0x17e7]
-    mov word [0x17e5],di
-    mov cx,word [0x17e1]
-    mov word [0x17e3],cx
+    mov di,word [gravity_cga_addr]
+    mov word [gravity_prev_cga],di
+    mov cx,word [gravity_save_dims]
+    mov word [gravity_restore_dims],cx
     mov ax,0xb800
     mov es,ax
-    mov si,word [0x17dd]
-    mov bp,0x17ee
+    mov si,word [gravity_cur_sprite]
+    mov bp,gravity_save_buf
     call blit_transparent                           ;undefined blit_transparent()
     ret
 
@@ -369,9 +369,9 @@ lab_18fd:
 restore_gravity_bg:
     mov ax,0xb800
     mov es,ax
-    mov di,word [0x17e5]
-    mov si,0x17ee
-    mov cx,word [0x17e3]
+    mov di,word [gravity_prev_cga]
+    mov si,gravity_save_buf
+    mov cx,word [gravity_restore_dims]
     call blit_to_cga                           ;undefined blit_to_cga()
     ret
 
@@ -384,25 +384,25 @@ restore_gravity_bg:
 ;   - Checks collision via check_fish_collision and check_trashcan_near
 ; Rate-limited by a countdown timer [0x166A].
 update_cat_jump:
-    dec byte [0x166a]
+    dec byte [jump_tick_delay]
     jz lab_193d
 lab_193c:
     ret
 lab_193d:
-    mov byte [0x166a],0xd
+    mov byte [jump_tick_delay],0xd
     call check_vsync                           ;undefined check_vsync()
     jnz lab_193c
-    cmp byte [0x1665],0x0
+    cmp byte [jump_anim_counter],0x0
     jz lab_1951
     call check_fish_collision                           ;undefined check_fish_collision()
 lab_1951:
     cmp byte [gravity_y],0x0
     jnz lab_193c
-    cmp byte [0x1665],0x0
+    cmp byte [jump_anim_counter],0x0
     jnz lab_19cd
     cmp byte [cat_y],0x60
     ja lab_193c
-    mov byte [0x1677],0x0
+    mov byte [idle_aggro_flag],0x0
     cmp byte [game_mode],0x1
     jnz lab_198a
     cmp byte [0x418],0x0
@@ -412,10 +412,10 @@ lab_1951:
     sub dx,word [0x556]
     cmp dx,0x48
     jc lab_198a
-    inc byte [0x1677]
+    inc byte [idle_aggro_flag]
 lab_198a:
     call random                           ;undefined random()
-    cmp byte [0x1677],0x0
+    cmp byte [idle_aggro_flag],0x0
     jz lab_199a
     and dl,0x3
     jmp short lab_19a2
@@ -425,107 +425,107 @@ lab_199a:
     cmp dl,0xc
     jnc lab_193c
 lab_19a2:
-    mov byte [0x1669],dl
+    mov byte [jump_spawn_param],dl
     call decode_enemy_params                           ;undefined decode_enemy_params()
-    mov word [0x1666],cx
-    mov byte [0x1668],dl
+    mov word [jump_x],cx
+    mov byte [jump_y],dl
     call check_fish_collision                           ;undefined check_fish_collision()
     jc lab_198a
-    mov byte [0x1665],0x1d
+    mov byte [jump_anim_counter],0x1d
     mov bx,word [difficulty_level]
     shl bl,0x1
-    mov ax,word [bx + 0x181e]
-    mov [0x166c],ax
-    mov byte [0x1670],0x1
+    mov ax,word [bx + jump_pause_by_diff]
+    mov [jump_toss_delay],ax
+    mov byte [jump_toss_remaining],0x1
 lab_19cd:
     call check_fish_collision                           ;undefined check_fish_collision()
     jc lab_19e0
-    mov byte [0x1664],0x0
+    mov byte [cycle_active],0x0
     call check_trashcan_near                           ;undefined check_trashcan_near()
     jnc lab_19e1
-    inc byte [0x1664]
+    inc byte [cycle_active]
 lab_19e0:
     ret
 lab_19e1:
-    cmp byte [0x1665],0x10
+    cmp byte [jump_anim_counter],0x10
     jnz lab_19f0
     db 0x2a, 0xe4                       ; sub ah,ah
     int 0x1a                            ; BIOS Timer: Get tick count → CX:DX
-    mov word [0x166e],dx
+    mov word [jump_toss_tick],dx
 lab_19f0:
-    cmp byte [0x1665],0xf
+    cmp byte [jump_anim_counter],0xf
     jnz lab_1a76
     db 0x2a, 0xe4                       ; sub ah,ah
     int 0x1a                            ; BIOS Timer: Get tick count → CX:DX
-    sub dx,word [0x166e]
-    cmp dx,word [0x166c]
+    sub dx,word [jump_toss_tick]
+    cmp dx,word [jump_toss_delay]
     jnc lab_1a76
-    cmp byte [0x1670],0x0
+    cmp byte [jump_toss_remaining],0x0
     jz lab_1a75
     cmp byte [gravity_y],0x0
     jnz lab_1a75
     cmp byte [0x418],0x0
     jnz lab_1a75
-    dec byte [0x1670]
-    mov byte [0x1678],0x1
-    mov al,[0x1668]
+    dec byte [jump_toss_remaining]
+    mov byte [deduct_life],0x1
+    mov al,[jump_y]
     mov [gravity_y],al
     call random                           ;undefined random()
     db 0x81, 0xe2, 0x0f, 0x00           ; and dx,0xf
-    add dx,word [0x1666]
+    add dx,word [jump_x]
     mov word [gravity_x],dx
     mov al,0x1
     cmp dx,word [cat_x]
     jc lab_1a42
     mov al,0xff
 lab_1a42:
-    mov [0x1674],al
+    mov [gravity_drift_dir],al
     call random                           ;undefined random()
     db 0x8a, 0xda                       ; mov bl,dl
     db 0x81, 0xe3, 0x06, 0x00           ; and bx,0x6
-    mov ax,word [bx + 0x17c9]
-    mov [0x17dd],ax
-    mov ax,word [bx + 0x17d1]
-    mov [0x17df],ax
+    mov ax,word [bx + gravity_sprite_ptrs]
+    mov [gravity_cur_sprite],ax
+    mov ax,word [bx + gravity_sprite_dims_tbl]
+    mov [gravity_cur_dims],ax
     shr bl,0x1
-    mov al,byte [bx + 0x17d9]
-    mov [0x1676],al
-    mov word [0x17ea],0x20
-    mov byte [0x17e9],0x1
-    mov byte [0x1675],0x0
+    mov al,byte [bx + gravity_height_table]
+    mov [gravity_target_height],al
+    mov word [gravity_h_speed],0x20
+    mov byte [gravity_frame],0x1
+    mov byte [dog_catch_flag],0x0
 lab_1a75:
     ret
 lab_1a76:
-    dec byte [0x1665]
-    mov cx,word [0x1666]
-    mov dl,byte [0x1668]
-    cmp byte [0x1665],0xe
+    dec byte [jump_anim_counter]
+    mov cx,word [jump_x]
+    mov dl,byte [jump_y]
+    cmp byte [jump_anim_counter],0xe
     jbe lab_1a93
-    add dl,byte [0x1665]
+    add dl,byte [jump_anim_counter]
     sub dl,0xe
     jmp short lab_1a9a
     db 0x90
 lab_1a93:
     add dl,0xe
-    sub dl,byte [0x1665]
+    sub dl,byte [jump_anim_counter]
 lab_1a9a:
-    mov byte [0x166b],dl
+    mov byte [jump_draw_y],dl
     call calc_cga_addr                           ;undefined calc_cga_addr()
     db 0x8b, 0xf8                       ; mov di,ax
     mov ax,0xb800
     mov es,ax
     cld
     mov cx,0x4
-    cmp byte [0x1665],0xe
+    cmp byte [jump_anim_counter],0xe
     jbe lab_1ad7
     cmp byte [0x418],0x0
     jz lab_1ad2
-    mov al,[0x166b]
-    sub al,byte [0x1668]
+    mov al,[jump_draw_y]
+    sub al,byte [jump_y]
     db 0x2a, 0xe4                       ; sub ah,ah
     mov cl,0x3
     shl ax,cl
-    add ax,0x15e0
+    add ax,jump_land_sprite_data
     db 0x8b, 0xf0                       ; mov si,ax
     mov cx,0x4
     rep movsw
@@ -535,11 +535,11 @@ lab_1ad2:
     rep stosw
     ret
 lab_1ad7:
-    mov al,[0x166b]
-    sub al,byte [0x1668]
+    mov al,[jump_draw_y]
+    sub al,byte [jump_y]
     mov ah,0xa
     mul ah
-    add ax,0x2681
+    add ax,jump_land_sprites
     db 0x8b, 0xf0                       ; mov si,ax
     rep movsw
     ret

@@ -4,18 +4,18 @@ decode_enemy_params:
     db 0x8a, 0xda                       ; mov bl,dl
     and bl,0x3
     shl bl,0x1
-    mov cx,word [bx + 0x1658]
+    mov cx,word [bx + jump_spawn_x_table]
     db 0x8a, 0xda                       ; mov bl,dl
     shr bl,0x1
     shr bl,0x1
     and bl,0x3
-    mov dl,byte [bx + 0x1660]
+    mov dl,byte [bx + jump_spawn_y_table]
     ret
 
 ; --- check_fish_collision ---
 check_fish_collision:
-    mov ax,[0x1666]
-    mov dl,byte [0x1668]
+    mov ax,[jump_x]
+    mov dl,byte [jump_y]
     mov bx,word [cat_x]
     mov dh,byte [cat_y]
     mov si,0x20
@@ -29,9 +29,9 @@ check_fish_collision:
     jnz lab_1b4a
     cmp byte [cat_y],0x60
     jnc lab_1b4a
-    cmp byte [0x1665],0x5
+    cmp byte [jump_anim_counter],0x5
     jc lab_1b4a
-    cmp byte [0x1665],0x19
+    cmp byte [jump_anim_counter],0x19
     jnc lab_1b4a
     mov byte [0x551],0x1
 lab_1b4a:
@@ -41,7 +41,7 @@ lab_1b4b:
 
 ; --- check_trashcan_near ---
 check_trashcan_near:
-    mov al,[0x1669]
+    mov al,[jump_spawn_param]
     cmp al,0x8
     jnc lab_1b78
     mov bx,0x2
@@ -49,15 +49,15 @@ check_trashcan_near:
     jz lab_1b5c
     shl bl,0x1
 lab_1b5c:
-    mov ax,word [bx + 0x1f30]
+    mov ax,word [bx + obj_x]
     db 0x05, 0x10, 0x00                 ; add ax,0x10
-    cmp ax,word [0x1666]
+    cmp ax,word [jump_x]
     jc lab_1b78
     db 0x2d, 0x30, 0x00                 ; sub ax,0x30
     jnc lab_1b70
     db 0x2b, 0xc0                       ; sub ax,ax
 lab_1b70:
-    cmp ax,word [0x1666]
+    cmp ax,word [jump_x]
     ja lab_1b78
     stc
     ret
@@ -72,7 +72,7 @@ check_dog_collision:
     mov dl,byte [gravity_y]
     cmp dl,0x0
     jz lab_1be1
-    mov cx,word [0x17df]
+    mov cx,word [gravity_cur_dims]
     db 0x86, 0xcd                       ; xchg ch,cl
     mov si,0x10
     mov ax,[gravity_x]
@@ -85,18 +85,18 @@ check_dog_collision:
     call restore_alley_buffer                           ;undefined restore_alley_buffer()
     call restore_gravity_bg                           ;undefined restore_gravity_bg()
     call enter_building                           ;undefined enter_building()
-    cmp byte [0x1675],0x0
+    cmp byte [dog_catch_flag],0x0
     jnz lab_1bdf
-    mov byte [0x1675],0x1
+    mov byte [dog_catch_flag],0x1
     call handle_cat_death                           ;undefined handle_cat_death()
     mov dl,0x1
-    cmp byte [0x1674],0xff
+    cmp byte [gravity_drift_dir],0xff
     jz lab_1bcb
     mov dl,0xff
 lab_1bcb:
-    mov byte [0x1674],dl
-    mov word [0x17ea],0x60
-    mov byte [0x17e9],0x1
+    mov byte [gravity_drift_dir],dl
+    mov word [gravity_h_speed],0x60
+    mov byte [gravity_frame],0x1
     mov byte [at_platform],0x0
 lab_1bdf:
     stc
@@ -126,7 +126,7 @@ lab_1c12:
     mov ax,0xb800
     mov es,ax
     cld
-    mov word [0x1839],0x0
+    mov word [wipe_fill_pattern],0x0
     call animate_screen_wipe
     call silence_speaker
     call set_palette
@@ -152,35 +152,35 @@ lab_1c49:
 lab_1c5a:
     mov ax,0x5555
 lab_1c5d:
-    mov [0x1839],ax
+    mov [wipe_fill_pattern],ax
     call animate_screen_wipe
     call silence_speaker
     ret
 animate_screen_wipe:
     call wipe_sound_start
-    mov word [0x1835],0x1
-    mov byte [0x1837],0x8
+    mov word [wipe_width],0x1
+    mov byte [wipe_height],0x8
     mov cx,[0x579]
     mov dl,[0x57b]
     add cx,0xc
     db 0x81, 0xe1, 0xf0, 0xff           ; and cx,0xfff0
     add dl,0x8
-    mov byte [0x1838],0x0
+    mov byte [wipe_edge_flags],0x0
 lab_1c8c:
     call play_wipe_note
-    mov [0x1832],cx
-    mov [0x1834],dl
+    mov [wipe_rect_x],cx
+    mov [wipe_rect_y],dl
     call calc_cga_addr
     db 0x8b, 0xf8                       ; mov di,ax
-    mov bl,[0x1837]
+    mov bl,[wipe_height]
 lab_1ca0:
-    mov ax,[0x1839]
-    mov cx,[0x1835]
+    mov ax,[wipe_fill_pattern]
+    mov cx,[wipe_width]
     db 0xd1, 0xe9                       ; shr cx,0x0
     db 0xd1, 0xe9                       ; shr cx,0x0
     db 0xd1, 0xe9                       ; shr cx,0x0
     rep stosw
-    mov cx,[0x1835]
+    mov cx,[wipe_width]
     db 0xd1, 0xe9                       ; shr cx,0x0
     db 0xd1, 0xe9                       ; shr cx,0x0
     and cx,0xfe
@@ -192,34 +192,34 @@ lab_1ca0:
 lab_1cca:
     dec bl
     jnz short lab_1ca0
-    cmp byte [0x1838],0xf
+    cmp byte [wipe_edge_flags],0xf
     jnz short lab_1cd6
     ret
 lab_1cd6:
-    add word [0x1835],0x20
-    add byte [0x1837],0x10
-    mov cx,[0x1832]
-    mov dl,[0x1834]
+    add word [wipe_width],0x20
+    add byte [wipe_height],0x10
+    mov cx,[wipe_rect_x]
+    mov dl,[wipe_rect_y]
     sub cx,0x10
     jnb short lab_1cf4
     db 0x2b, 0xc9                       ; sub cx,cx
-    or byte [0x1838],0x1
+    or byte [wipe_edge_flags],0x1
 lab_1cf4:
-    mov ax,[0x1835]
+    mov ax,[wipe_width]
     db 0x03, 0xc1                       ; add ax,cx
     cmp ax,0x140
     jb short lab_1d0b
     mov ax,0x140
     db 0x2b, 0xc1                       ; sub ax,cx
-    mov [0x1835],ax
-    or byte [0x1838],0x2
+    mov [wipe_width],ax
+    or byte [wipe_edge_flags],0x2
 lab_1d0b:
     sub dl,0x8
     jnb short lab_1d17
     db 0x2a, 0xd2                       ; sub dl,dl
-    or byte [0x1838],0x4
+    or byte [wipe_edge_flags],0x4
 lab_1d17:
-    mov al,[0x1837]
+    mov al,[wipe_height]
     db 0x02, 0xc2                       ; add al,dl
     jb short lab_1d22
     cmp al,0xc8
@@ -227,8 +227,8 @@ lab_1d17:
 lab_1d22:
     mov al,0xc8
     db 0x2a, 0xc2                       ; sub al,dl
-    mov [0x1837],al
-    or byte [0x1838],0x8
+    mov [wipe_height],al
+    or byte [wipe_edge_flags],0x8
 lab_1d2e:
     jmp near lab_1c8c
 
@@ -245,19 +245,19 @@ set_palette:
     mov ah,0xb
     mov bh,0x1
     mov si,word [level_number]
-    mov bl,byte [si + 0x1853]
+    mov bl,byte [si + cga_palette_table]
     int 0x10                            ; BIOS Video: Set CGA palette
     jmp short lab_1d67
 lab_1d48:
     mov si,word [level_number]
     mov bl,0x1
-    mov bh,byte [si + 0x183b]
+    mov bh,byte [si + pcjr_palette_1]
     call set_ega_palette                           ;undefined set_ega_palette()
     mov bl,0x2
-    mov bh,byte [si + 0x1843]
+    mov bh,byte [si + pcjr_palette_2]
     call set_ega_palette                           ;undefined set_ega_palette()
     mov bl,0x3
-    mov bh,byte [si + 0x184b]
+    mov bh,byte [si + pcjr_palette_3]
     call set_ega_palette                           ;undefined set_ega_palette()
 lab_1d67:
     mov ah,0xb
@@ -282,53 +282,53 @@ lab_1d81:
     mov ax,0x185b
     cmp byte [0x552],0x0
     jz short lab_1dc6
-    mov bx,[0x1c30]
-    add word [0x1c30],0x2
+    mov bx,[game_timer]
+    add word [game_timer],0x2
     db 0x81, 0xe3, 0x06, 0x00           ; and bx,0x6
-    mov ax,[bx+0x1c26]
-    cmp byte [0x1f80],0x0
+    mov ax,[bx+result_sprite_table]
+    cmp byte [lives_count],0x0
     jz short lab_1daa
-    dec byte [0x1f80]
+    dec byte [lives_count]
 lab_1daa:
     cmp byte [0x552],0xdd
     jnz short lab_1dc6
     cmp word [0x8],0x0
     jz short lab_1dc6
-    cmp byte [0x1f80],0x1
+    cmp byte [lives_count],0x1
     jb short lab_1dc6
     call show_extra_life
     call silence_speaker
     ret
 lab_1dc6:
-    mov [0x1c2e],ax
-    mov word [0x1c1b],0x8080
-    mov byte [0x1c1d],0x1c
+    mov [result_sprite_ptr],ax
+    mov word [result_dissolve_mask],0x8080
+    mov byte [result_frame_counter],0x1c
 lab_1dd4:
     call draw_result_frame
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
-    mov [0x1830],dx
+    mov [result_last_tick],dx
 lab_1ddf:
     call play_result_note
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
-    cmp dx,[0x1830]
+    cmp dx,[result_last_tick]
     jz short lab_1ddf
-    cmp byte [0x1c1d],0x14
+    cmp byte [result_frame_counter],0x14
     ja short lab_1e02
     db 0x2a, 0xff                       ; sub bh,bh
-    mov bl,[0x1c1d]
+    mov bl,[result_frame_counter]
     and bl,0x6
-    mov ax,[bx+0x1c1e]
+    mov ax,[bx+result_mask_table]
     jmp short lab_1e0a
 lab_1e02:
-    mov ax,[0x1c1b]
+    mov ax,[result_dissolve_mask]
     stc
     db 0xd0, 0xd8                       ; rcr al,0x0
     db 0x8a, 0xe0                       ; mov ah,al
 lab_1e0a:
-    mov [0x1c1b],ax
-    dec byte [0x1c1d]
+    mov [result_dissolve_mask],ax
+    dec byte [result_frame_counter]
     jnz short lab_1dd4
     call silence_speaker
     ret
@@ -336,12 +336,12 @@ draw_result_frame:
     cld
     push ds
     pop es
-    mov si,[0x1c2e]
+    mov si,[result_sprite_ptr]
     mov di,0xe
     mov cx,0x60
 lab_1e24:
     lodsw
-    and ax,[0x1c1b]
+    and ax,[result_dissolve_mask]
     stosw
     loop short lab_1e24
     mov ax,0xb800
@@ -358,11 +358,11 @@ lab_1e24:
 ; reinitializes the chase sound generator.
 init_sound:
     mov byte [enemy_chasing],0x0
-    mov word [0x1ce1],0x0
-    mov byte [0x1cc0],0x0
-    mov byte [0x1cc1],0x0
+    mov word [enemy_tick_counter],0x0
+    mov byte [enemy_approach_timer],0x0
+    mov byte [enemy_exit_timer],0x0
     mov byte [enemy_active],0x0
-    mov byte [0x1cc8],0xb1
+    mov byte [enemy_y_pos],0xb1
     call init_chase_sound                           ;undefined init_chase_sound()
     ret
 
@@ -374,8 +374,8 @@ update_enemies:
     db 0x2a, 0xe4                       ; sub ah,ah
     int 0x1a                            ; BIOS Timer: Get tick count → CX:DX
     db 0x8b, 0xca                       ; mov cx,dx
-    sub dx,word [0x1cc9]
-    mov ax,[0x1ce1]
+    sub dx,word [enemy_last_tick]
+    mov ax,[enemy_tick_counter]
     db 0x25, 0x01, 0x00                 ; and ax,0x1
     db 0x05, 0x01, 0x00                 ; add ax,0x1
     db 0x3b, 0xd0                       ; cmp dx,ax
@@ -385,11 +385,11 @@ lab_1e7a:
 lab_1e7b:
     call check_vsync                           ;undefined check_vsync()
     jz lab_1e7a
-    mov word [0x1cc9],cx
-    inc word [0x1ce1]
-    cmp byte [0x1cc1],0x0
+    mov word [enemy_last_tick],cx
+    inc word [enemy_tick_counter]
+    cmp byte [enemy_exit_timer],0x0
     jz lab_1ee2
-    dec byte [0x1cc1]
+    dec byte [enemy_exit_timer]
     jnz lab_1ec9
     call silence_speaker                           ;undefined silence_speaker()
     cmp byte [enemy_active],0x0
@@ -411,7 +411,7 @@ lab_1ec2:
 lab_1ec9:
     call update_enemy_sprite                           ;undefined update_enemy_sprite()
     mov ax,0x104
-    sub al,byte [0x1cc1]
+    sub al,byte [enemy_exit_timer]
     cmp byte [enemy_dir],0xff
     jz lab_1edc
     mov ah,0xff
@@ -422,9 +422,9 @@ lab_1ee2:
     cmp byte [enemy_active],0x0
     jz lab_1f0c
     mov dl,byte [enemy_active]
-    cmp word [0x1cb9],0x0
+    cmp word [enemy_chase_delay],0x0
     jz lab_1f02
-    dec word [0x1cb9]
+    dec word [enemy_chase_delay]
     call random                           ;undefined random()
     and dl,0x1
     jnz lab_1f02
@@ -436,9 +436,9 @@ lab_1f02:
 lab_1f0c:
     cmp byte [enemy_chasing],0x0
     jnz lab_1f75
-    cmp byte [0x1cc0],0x0
+    cmp byte [enemy_approach_timer],0x0
     jnz lab_1f57
-    cmp byte [0x1d58],0x0
+    cmp byte [fall_hit],0x0
     jnz lab_1f3d
     cmp byte [cat_y],0xb4
     jc lab_1f3c
@@ -446,33 +446,33 @@ lab_1f0c:
     jnz lab_1f3c
     call random                           ;undefined random()
     mov bx,word [difficulty_level]
-    cmp dl,byte [bx + 0x1cd1]
+    cmp dl,byte [bx + enemy_spawn_chance]
     jc lab_1f3d
 lab_1f3c:
     ret
 lab_1f3d:
     mov al,0x1
-    mov word [0x59ba],0x0
+    mov word [walk_note_index],0x0
     cmp word [cat_x],0xa0
     jnc lab_1f4f
     mov al,0xff
 lab_1f4f:
     mov [enemy_dir],al
-    mov byte [0x1cc0],0x4
+    mov byte [enemy_approach_timer],0x4
 lab_1f57:
-    dec byte [0x1cc0]
+    dec byte [enemy_approach_timer]
     jnz lab_1f65
     mov byte [enemy_chasing],0x1
     jmp short lab_1f75
     db 0x90
 lab_1f65:
     call update_enemy_sprite                           ;undefined update_enemy_sprite()
-    mov al,[0x1cc0]
+    mov al,[enemy_approach_timer]
     mov ah,byte [enemy_dir]
     call update_enemy_viewport                           ;undefined update_enemy_viewport()
     jmp near lab_1ffb
 lab_1f75:
-    mov byte [0x1d58],0x0
+    mov byte [fall_hit],0x0
     mov ax,[enemy_x]
     cmp byte [cat_y],0xb4
     jc lab_1fab
@@ -480,7 +480,7 @@ lab_1f75:
     jnz lab_1fab
     call random                           ;undefined random()
     mov bx,word [difficulty_level]
-    cmp dl,byte [bx + 0x1cd9]
+    cmp dl,byte [bx + enemy_chase_chance]
     ja lab_1fab
     cmp ax,word [cat_x]
     ja lab_1fa6
@@ -499,7 +499,7 @@ lab_1fab:
 lab_1fbb:
     cmp byte [enemy_active],0x0
     jz lab_1fcc
-    cmp word [0x1cb9],0x0
+    cmp word [enemy_chase_delay],0x0
     jnz lab_1fef
     jmp short lab_1fda
     db 0x90
@@ -509,7 +509,7 @@ lab_1fcc:
     cmp byte [0x558],0x0
     jz lab_1fef
 lab_1fda:
-    mov byte [0x1cc1],0x4
+    mov byte [enemy_exit_timer],0x4
     jmp short lab_1fef
     db 0x90
 lab_1fe2:
@@ -521,20 +521,20 @@ lab_1fe2:
 lab_1fef:
     mov [enemy_x],ax
     call update_enemy_sprite                           ;undefined update_enemy_sprite()
-    mov word [0x1cc4],0xf04
+    mov word [enemy_sprite_dims],0xf04
 lab_1ffb:
     mov cx,word [enemy_x]
-    mov dl,byte [0x1cc8]
+    mov dl,byte [enemy_y_pos]
     call calc_cga_addr                           ;undefined calc_cga_addr()
-    mov [0x1ccd],ax
-    cmp byte [0x1cc0],0x3
+    mov [enemy_next_addr],ax
+    cmp byte [enemy_approach_timer],0x3
     jz lab_2013
     call erase_enemy                           ;undefined erase_enemy()
 lab_2013:
     call check_enemy_activate                           ;undefined check_enemy_activate()
     jc lab_2021
-    mov ax,[0x1ccd]
-    mov [0x1cbd],ax
+    mov ax,[enemy_next_addr]
+    mov [enemy_draw_addr],ax
     call draw_enemy                           ;undefined draw_enemy()
 lab_2021:
     ret
@@ -544,33 +544,33 @@ update_enemy_sprite:
     db 0x2a, 0xff                       ; sub bh,bh
     cmp byte [enemy_active],0x0
     jz lab_203b
-    inc byte [0x1ccf]
-    mov bl,byte [0x1ccf]
+    inc byte [enemy_anim_frame]
+    mov bl,byte [enemy_anim_frame]
     and bl,0x6
     or bl,0x8
     jnz lab_2051
 lab_203b:
-    add byte [0x1ccf],0x2
-    mov bl,byte [0x1ccf]
+    add byte [enemy_anim_frame],0x2
+    mov bl,byte [enemy_anim_frame]
     and bl,0x2
     cmp byte [enemy_dir],0x1
     jnz lab_2051
     or bl,0x4
 lab_2051:
-    mov ax,word [bx + 0x15c8]
-    mov [0x1cbb],ax
+    mov ax,word [bx + enemy_sprite_table]
+    mov [enemy_sprite_ptr],ax
     ret
 
 ; --- update_enemy_viewport ---
 update_enemy_viewport:
     mov cx,0xf04
     db 0x2a, 0xc8                       ; sub cl,al
-    mov word [0x1cc4],cx
+    mov word [enemy_sprite_dims],cx
     cmp ah,0xff
     jz lab_2078
     db 0x2a, 0xe4                       ; sub ah,ah
     shl al,0x1
-    add word [0x1cbb],ax
+    add word [enemy_sprite_ptr],ax
     mov word [enemy_x],0x0
     jmp short lab_2086
     db 0x90
@@ -584,24 +584,24 @@ lab_2078:
 lab_2086:
     push ds
     pop es
-    mov si,word [0x1cbb]
+    mov si,word [enemy_sprite_ptr]
     mov di,0xe
     mov al,0x4
     call copy_with_stride                           ;undefined copy_with_stride()
-    mov word [0x1cbb],0xe
+    mov word [enemy_sprite_ptr],0xe
     ret
 
 ; --- draw_enemy ---
 draw_enemy:
-    mov cx,word [0x1cc4]
-    mov word [0x1cc2],cx
+    mov cx,word [enemy_sprite_dims]
+    mov word [enemy_erase_dims],cx
     mov ax,0xb800
     cmp byte [enemy_active],0x0
     jnz lab_20be
     mov es,ax
-    mov di,word [0x1cbd]
-    mov si,word [0x1cbb]
-    mov bp,0x1c40
+    mov di,word [enemy_draw_addr]
+    mov si,word [enemy_sprite_ptr]
+    mov bp,enemy_save_buf
     call blit_transparent                           ;undefined blit_transparent()
     ret
 lab_20be:
@@ -611,13 +611,13 @@ lab_20be:
     push es
     push ds
     mov si,word [es:0x1cbd]
-    mov di,0x1c40
+    mov di,enemy_save_buf
     call save_from_cga                           ;undefined save_from_cga()
     pop es
     pop ds
-    mov si,word [0x1cbb]
-    mov di,word [0x1cbd]
-    mov cx,word [0x1cc4]
+    mov si,word [enemy_sprite_ptr]
+    mov di,word [enemy_draw_addr]
+    mov cx,word [enemy_sprite_dims]
     call blit_to_cga                           ;undefined blit_to_cga()
     ret
 
@@ -625,9 +625,9 @@ lab_20be:
 erase_enemy:
     mov ax,0xb800
     mov es,ax
-    mov di,word [0x1cbd]
-    mov si,0x1c40
-    mov cx,word [0x1cc2]
+    mov di,word [enemy_draw_addr]
+    mov si,enemy_save_buf
+    mov cx,word [enemy_erase_dims]
     call blit_to_cga                           ;undefined blit_to_cga()
     ret
 
@@ -636,8 +636,8 @@ check_enemy_activate:
     cmp byte [enemy_active],0x0
     jnz lab_2134
     mov al,[enemy_chasing]
-    or al,byte [0x1cc0]
-    or al,byte [0x1cc1]
+    or al,byte [enemy_approach_timer]
+    or al,byte [enemy_exit_timer]
     jz lab_2134
     cmp byte [cat_y],0xa3
     jc lab_2134
@@ -664,7 +664,7 @@ activate_enemy_chase:
     cmp word [level_number],0x6
     jnz lab_2149
     mov al,[cat_y]
-    mov [0x1cc8],al
+    mov [enemy_y_pos],al
     mov ax,[cat_x]
     mov [enemy_x],ax
 lab_2149:
@@ -690,23 +690,23 @@ lab_216e:
 lab_2173:
     mov byte [enemy_active],bl
     mov byte [enemy_chasing],0x1
-    mov byte [0x1cc1],0x0
+    mov byte [enemy_exit_timer],0x0
     mov cl,0x3
     shr dx,cl
-    mov word [0x1cb9],dx
+    mov word [enemy_chase_delay],dx
     cmp word [level_number],0x6
     jnz lab_21bd
     call restore_alley_buffer                           ;undefined restore_alley_buffer()
     mov al,[enemy_active]
     push ax
     mov byte [enemy_active],0x0
-    mov word [0x1cc4],0xf04
-    mov ax,[0x15c8]
-    mov [0x1cbb],ax
+    mov word [enemy_sprite_dims],0xf04
+    mov ax,[enemy_sprite_table]
+    mov [enemy_sprite_ptr],ax
     mov cx,word [enemy_x]
-    mov dl,byte [0x1cc8]
+    mov dl,byte [enemy_y_pos]
     call calc_cga_addr                           ;undefined calc_cga_addr()
-    mov [0x1cbd],ax
+    mov [enemy_draw_addr],ax
     call draw_enemy                           ;undefined draw_enemy()
     pop ax
     mov [enemy_active],al
@@ -726,15 +726,15 @@ lab_21de:
     stc
     ret
 check_enemy_object_hit:
-    mov al,[0x1cbf]
-    or al,[0x1cc0]
-    or al,[0x1cc1]
+    mov al,[enemy_chasing]
+    or al,[enemy_approach_timer]
+    or al,[enemy_exit_timer]
     jz short lab_2209
-    mov ax,[0x327d]
-    mov dl,[0x327f]
+    mov ax,[thrown_obj_x]
+    mov dl,[thrown_obj_y]
     mov si,0x10
-    mov bx,[0x1cc6]
-    mov dh,[0x1cc8]
+    mov bx,[enemy_x]
+    mov dh,[enemy_y_pos]
     mov di,0x20
     mov cx,0xf1e
     call check_rect_collision

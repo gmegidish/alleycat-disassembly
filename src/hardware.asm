@@ -86,10 +86,10 @@ install_handlers:
     mov word [cs:0x13e1],bx
     mov word [cs:0x13e3],cx
     mov word [cs:0x13e5],dx
-    mov bx,0x14b3
+    mov bx,keyboard_handler_xt
     cmp byte [rom_id],0xfd
     jnz lab_1450
-    mov bx,0x14fb
+    mov bx,keyboard_handler_pcjr
 lab_1450:
     cli
     mov word [es:0x24],bx

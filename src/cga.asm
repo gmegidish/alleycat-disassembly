@@ -5,7 +5,7 @@ calc_cga_addr:
     mul ah
     test dl,0x1
     jz lab_2cbe
-    add ax,0x1fd8
+    add ax,cga_row_table
 lab_2cbe:
     db 0x8b, 0xd1                       ; mov dx,cx
     shr dx,0x1

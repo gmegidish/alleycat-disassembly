@@ -51,7 +51,7 @@ lab_226d:
     jbe lab_2291
     add dl,byte [fall_counter]
     sub dl,0xf
-    mov bx,0x1b02
+    mov bx,dat_1b02
     sub bh,byte [fall_counter]
     jmp short lab_229f
     db 0x90
