@@ -245,17 +245,17 @@ show_pause_menu:
     mov bh,0x0
     mov ah,0x2
     int 0x10                            ; BIOS Video: Set cursor position (DH=row, DL=col)
-    mov si,dat_6d91
+    mov si,str_paws_game
     cld
     call print_string                           ;undefined print_string()
     mov dx,0xc05
     mov bh,0x0
     mov ah,0x2
     int 0x10                            ; BIOS Video: Set cursor position (DH=row, DL=col)
-    mov si,dat_6db2
+    mov si,str_key_continue
     cmp byte [use_joystick],0x0
     jz lab_5eba
-    mov si,dat_6dd3
+    mov si,str_button_continue
 lab_5eba:
     cld
     call print_string                           ;undefined print_string()
