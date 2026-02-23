@@ -35,6 +35,9 @@ lab_5c9c:
     jmp short lab_5c9c
 
 ; --- print_startup_msg ---
+; Prints a null-terminated string during early boot (before game starts).
+; Sets DS to the data segment, then calls print_string.
+; Input: SI = pointer to null-terminated string
 print_startup_msg:
 reloc_9:
     mov ax,DATA_SEG_PARA                ; relocated: DS = data segment
@@ -153,6 +156,11 @@ lab_5dd3:
     ret
 
 ; --- move_title_cat ---
+; Moves the cat during the title screen demo. Bounces the cat between
+; x=0x20 and x=0x120, with random direction changes in between.
+; Calls update_animation on vsync to advance the walking sprite.
+; Input: cat_x, attract_start_tick (globals)
+; Output: Updates input_horizontal direction, advances cat animation
 move_title_cat:
     cmp word [cat_x],0x20
     ja lab_5de2
@@ -189,6 +197,9 @@ lab_5e2a:
     ret
 
 ; --- print_string ---
+; Prints a null-terminated string using BIOS INT 10h teletype output.
+; Input: SI = pointer to null-terminated string
+; Output: SI points past the null terminator
 print_string:
     lodsb
     cmp al,0x0
@@ -203,6 +214,10 @@ lab_5e3a:
     ret
 
 ; --- animate_title_icon ---
+; Toggles between two title screen icon frames (from attract_icon_ptrs).
+; Increments attract_anim_idx by 2 and masks to alternate 0/2.
+; Input: attract_anim_idx (global)
+; Output: Blits a 48px x 10 icon sprite to CGA
 animate_title_icon:
     mov ax,0xb800
     mov es,ax
@@ -216,6 +231,9 @@ animate_title_icon:
     ret
 
 ; --- set_cursor ---
+; Sets the BIOS text cursor position to column 0 of the given row.
+; Input: DH = row number
+; Output: Cursor moved to (row DH, column 0)
 set_cursor:
     mov dl,0x0
     db 0x8a, 0xfa                       ; mov bh,dl
@@ -225,6 +243,11 @@ set_cursor:
     db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 
 ; --- show_pause_menu ---
+; Pauses the game: silences speaker, saves the CGA region behind the menu,
+; displays "PAWS GAME" and "press key/button to continue", waits for input,
+; then restores the screen and BIOS tick count so game timing is unaffected.
+; Input: use_joystick (global)
+; Output: Screen and tick count restored after pause
 show_pause_menu:
     call silence_speaker                           ;undefined silence_speaker()
     db 0x2a, 0xe4                       ; sub ah,ah
@@ -354,6 +377,9 @@ lab_5f93:
     ret
 
 ; --- wait_for_input ---
+; Blocks until a keypress (keyboard_counter changes) or joystick button press.
+; Input: use_joystick (global)
+; Output: Returns when input is detected
 wait_for_input:
     cmp byte [use_joystick],0x0
     jz lab_5fa7
@@ -371,6 +397,11 @@ lab_5faa:
     ret
 
 ; --- display_text_line ---
+; Displays one line of attract-mode text. Uses title_joy_offset as an index
+; into the cursor position table (attract_icon_sprite_b) and string pointer
+; table (attract_icon_sprite_a), then advances the offset by 2.
+; Input: title_joy_offset (global, word index into tables)
+; Output: One text line printed, title_joy_offset += 2
 display_text_line:
     mov bx,word [title_joy_offset]
     mov dx,word [bx + attract_icon_sprite_b]
@@ -382,6 +413,8 @@ display_text_line:
     ret
 
 ; --- clear_cga ---
+; Clears both CGA video RAM banks to black (0xB800:0000 and 0xB800:2000).
+; Output: All CGA pixels cleared to color 0
 clear_cga:
     cld
     mov ax,0xb800
@@ -396,6 +429,10 @@ clear_cga:
     ret
 
 ; --- detect_joystick ---
+; Tests if a game port joystick is present. Checks BIOS equipment list bit 12,
+; then calls test_joystick_axis twice. If no joystick, displays an error
+; message and waits for a keypress.
+; Output: CF=0 if joystick detected, CF=1 if not found
 detect_joystick:
     int 0x11                            ; BIOS: Equipment list → AX (bits 4-5=video mode)
     test ax,0x1000
@@ -419,6 +456,9 @@ lab_600e:
     ret
 
 ; --- test_joystick_axis ---
+; Fires the game port one-shot and polls axis bits 0-1 until they go low
+; (capacitor discharged) or 0x12 BIOS ticks elapse (timeout).
+; Output: CF=0 if axis responded (joystick present), CF=1 if timeout
 test_joystick_axis:
     mov dx,0x201
     out dx,al                           ; Joystick: trigger one-shot
@@ -628,6 +668,11 @@ lab_61dd:
     call erase_cupid
     call draw_cupid
     ret
+; --- draw_cupid ---
+; Draws the cupid/arrow sprite at its current position using transparent blit.
+; Selects the animation frame based on cupid_arrow_x and direction.
+; Input: cupid_arrow_x, cupid_dir, cupid_draw_addr (globals)
+; Output: Sprite blitted to CGA, cupid_drawn=0, cupid_erase_addr saved
 draw_cupid:
     mov ax,0xb800
     mov es,ax
@@ -646,6 +691,11 @@ lab_6217:
     mov cx,0x802
     call blit_transparent
     ret
+; --- erase_cupid ---
+; Erases the cupid sprite by restoring the saved background from dat_70cc.
+; Only erases if the sprite was previously drawn (cupid_drawn == 0).
+; Input: cupid_drawn, cupid_erase_addr (globals)
+; Output: Background restored at cupid_erase_addr
 erase_cupid:
     cmp byte [cupid_drawn],0x0
     jnz short lab_6244
@@ -657,6 +707,12 @@ erase_cupid:
     call blit_to_cga
 lab_6244:
     ret
+; --- cupid_toggle_window ---
+; If the cupid is over a window position, toggles that window's open/close
+; state and redraws the tile. Matches cupid_y to a window row, then cupid_x
+; to a column within that row. Skips if same window as last toggle.
+; Input: cupid_x, cupid_y (globals)
+; Output: May toggle window_open_state and call draw_bg_tile
 cupid_toggle_window:
     mov al,[cupid_y]
     sub al,0x8
@@ -702,6 +758,11 @@ lab_625b:
     call draw_bg_tile
     call draw_cupid
     ret
+; --- check_cupid_collision ---
+; Checks if the cupid sprite overlaps with the cat. If collision detected,
+; sets cat_died flag and triggers knockback + hit sound.
+; Input: cupid_active, cupid_x, cupid_y, cat position (globals)
+; Output: CF=1 if collision (cat killed), CF=0 otherwise
 check_cupid_collision:
     cmp byte [cupid_active],0x0
     jnz short lab_62af
