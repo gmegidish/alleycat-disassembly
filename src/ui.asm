@@ -772,16 +772,16 @@ lab_62af:
     mov ax,[cupid_x]
     mov dl,[cupid_y]
     mov si,0x10
-    mov bx,[0x579]
-    mov dh,[0x57b]
+    mov bx,[cat_x]
+    mov dh,[cat_y]
     mov di,0x18
     mov cx,0xe08
     call check_rect_collision
     jnb short lab_62ea
-    mov byte [0x571],0x1
-    mov byte [0x576],0x2
-    mov byte [0x578],0x20
-    mov byte [0x55b],0x8
+    mov byte [in_level_mode],0x1
+    mov byte [anim_counter],0x2
+    mov byte [anim_step],0x20
+    mov byte [transition_timer],0x8
     mov ax,0x91d
     mov bx,0xce4
     call start_tone

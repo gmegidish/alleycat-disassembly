@@ -52,7 +52,7 @@ lab_2e68:
 lab_2e7d:
     db 0x8b, 0xd9                       ; mov bx,cx
     dec bx
-    mov al,[0x57b]
+    mov al,[cat_y]
     sub al,[bx+window_row_y_table]
     jnb short lab_2e8b
     not al
@@ -72,7 +72,7 @@ lab_2ea8:
     mov al,[si+window_row_y_table]
     mov [bx+l7_obj_y],al
     mov [l7_obj_cur_y],al
-    mov ax,[0x579]
+    mov ax,[cat_x]
     db 0xd0, 0xe3                       ; shl bl,0x0
     cmp ax,0x108
     jb short lab_2ec8
@@ -158,8 +158,8 @@ lab_2f7f:
     mov ax,[bx+l7_obj_x]
     mov si,0x18
     db 0x8b, 0xfe                       ; mov di,si
-    mov bx,[0x579]
-    mov dh,[0x57b]
+    mov bx,[cat_x]
+    mov dh,[cat_y]
     mov cx,0xe0f
     call check_rect_collision
     pop cx
@@ -369,7 +369,7 @@ lab_3169:
     db 0x22, 0xc2                       ; and al,dl
     xor [dat_32eb],al
     mov ax,[thrown_obj_x]
-    sub ax,[0x579]
+    sub ax,[cat_x]
     mov dl,0xff
     jnb short lab_3196
     not ax
@@ -378,7 +378,7 @@ lab_3196:
     mov [dat_32ed],dl
     mov bl,[thrown_obj_y]
     add bl,0x14
-    sub bl,[0x57b]
+    sub bl,[cat_y]
     mov dl,0xff
     jnb short lab_31ad
     not bl
@@ -604,8 +604,8 @@ lab_33d3:
     mov ax,[thrown_obj_x]
     mov dl,[thrown_obj_y]
     mov si,0x10
-    mov bx,[0x579]
-    mov dh,[0x57b]
+    mov bx,[cat_x]
+    mov dh,[cat_y]
     mov di,0x18
     mov cx,0xe1e
     call check_rect_collision
@@ -892,7 +892,7 @@ lab_36a4:
     jnz short lab_36bd
     cmp byte [0x697],0xfd
     jnz short lab_36b7
-    cmp byte [0x57b],0x30
+    cmp byte [cat_y],0x30
     jb short lab_36bd
 lab_36b7:
     mov ax,[dat_350b]
@@ -1031,9 +1031,9 @@ animate_level2_blocks:
 lab_380b:
     db 0x8b, 0xfb                       ; mov di,bx
     db 0xd1, 0xe7                       ; shl di,0x0
-    cmp byte [0x57b],0x7
+    cmp byte [cat_y],0x7
     ja short lab_3829
-    mov ax,[0x579]
+    mov ax,[cat_x]
     mov cl,0x2
     shr ax,cl
     inc ax
@@ -1082,8 +1082,8 @@ lab_3860:
     mov ax,0xe4
     mov dl,0x8a
     mov si,0x10
-    mov bx,[0x579]
-    mov dh,[0x57b]
+    mov bx,[cat_x]
+    mov dh,[cat_y]
     mov di,0x18
     mov cx,0xe0a
     call check_rect_collision
@@ -1396,8 +1396,8 @@ lab_3b57:
     mov ax,[bx+dat_37a3]
     mov dl,0x18
     mov si,0x10
-    mov bx,[0x579]
-    mov dh,[0x57b]
+    mov bx,[cat_x]
+    mov dh,[cat_y]
     mov di,0x18
     mov cx,0xe10
     call check_rect_collision
@@ -1551,7 +1551,7 @@ lab_3cd2:
     cmp dl,0x8
     jnz short lab_3d25
     db 0x25, 0xf8, 0xff                 ; and ax,0xfff8
-    mov dx,[0x579]
+    mov dx,[cat_x]
     db 0x81, 0xe2, 0xf8, 0xff           ; and dx,0xfff8
     db 0x3b, 0xc2                       ; cmp ax,dx
     jnz short lab_3d0d
@@ -1590,10 +1590,10 @@ lab_3d49:
     jmp short lab_3d76
 lab_3d52:
     db 0x02, 0xc2                       ; add al,dl
-    cmp al,[0x57b]
+    cmp al,[cat_y]
     ja short lab_3d71
     mov bx,[dat_3964]
-    sub bx,[0x579]
+    sub bx,[cat_x]
     jnb short lab_3d66
     not bx
 lab_3d66:
@@ -1622,7 +1622,7 @@ lab_3d90:
     jz short lab_3d98
     ret
 lab_3d98:
-    mov cx,[0x579]
+    mov cx,[cat_x]
     sub cx,0xc
     jnb short lab_3da3
     db 0x2b, 0xc9                       ; sub cx,cx
@@ -1631,7 +1631,7 @@ lab_3da3:
     jb short lab_3dac
     mov cx,0x10e
 lab_3dac:
-    mov dl,[0x57b]
+    mov dl,[cat_y]
     sub dl,0x4
     jnb short lab_3db7
     db 0x2a, 0xd2                       ; sub dl,dl
@@ -1708,8 +1708,8 @@ check_l3_enemy_cat:
     mov dl,[dat_3966]
     mov si,0x18
     db 0x8b, 0xfe                       ; mov di,si
-    mov bx,[0x579]
-    mov dh,[0x57b]
+    mov bx,[cat_x]
+    mov dh,[cat_y]
     mov cx,0xe0e
     call check_rect_collision
     ret
@@ -1796,11 +1796,11 @@ lab_3f3f:
 lab_3f58:
     mov di,[l3_door_cga_3]
     mov al,[l4_obj_cur_y]
-    mov [0x57b],al
+    mov [cat_y],al
     add al,0x32
     mov [0x57c],al
     mov ax,[l4_obj_cur_x]
-    mov [0x579],ax
+    mov [cat_x],ax
     mov ax,[l3_door_sprite_base]
 lab_3f70:
     add ax,[bx+l4_anim_offset_table]
@@ -1898,8 +1898,8 @@ check_l4_thrown_collision:
     mov ax,[thrown_obj_x]
     mov dl,[thrown_obj_y]
     mov si,0x10
-    mov bx,[0x579]
-    mov dh,[0x57b]
+    mov bx,[cat_x]
+    mov dh,[cat_y]
     mov di,0x18
     mov cx,0xe1e
     call check_rect_collision
@@ -2153,8 +2153,8 @@ check_l4_obj_cat:
     mov ax,[si+l5_obj_dims]
     mov dl,[bx+l5_obj_y_pos]
     mov si,0x10
-    mov bx,[0x579]
-    mov dh,[0x57b]
+    mov bx,[cat_x]
+    mov dh,[cat_y]
     mov di,0x18
     mov cx,0xe0c
     call check_rect_collision
@@ -2177,12 +2177,12 @@ check_l4_obj_thrown:
     ret
 check_l4_proximity:
     mov ax,[si+l5_obj_dims]
-    sub ax,[0x579]
+    sub ax,[cat_x]
     jnb short lab_4328
     not ax
 lab_4328:
     mov dl,[bx+l5_obj_y_pos]
-    sub dl,[0x57b]
+    sub dl,[cat_y]
     jnb short lab_4334
     not dl
 lab_4334:
@@ -2360,9 +2360,9 @@ lab_44d5:
 lab_44e6:
     ret
 check_l5_landing:
-    cmp byte [0x571],0x0
+    cmp byte [in_level_mode],0x0
     jnz short lab_44f9
-    mov al,[0x57b]
+    mov al,[cat_y]
     and al,0xf8
     cmp al,0x88
     jnz short lab_44f9
@@ -2374,7 +2374,7 @@ lab_44f9:
 calc_l5_direction:
     mov ax,[dat_40b2]
     mov dl,0x1
-    sub ax,[0x579]
+    sub ax,[cat_x]
     jnb short lab_450a
     not ax
     mov dl,0xff
@@ -2383,7 +2383,7 @@ lab_450a:
     mov [dat_40cc],ax
     mov al,[dat_40b4]
     mov dl,0x1
-    sub al,[0x57b]
+    sub al,[cat_y]
     jnb short lab_4520
     not al
     mov dl,0xff
@@ -2397,8 +2397,8 @@ check_l5_cat_catch:
     mov ax,[dat_40b2]
     mov dl,[dat_40b4]
     mov si,0x8
-    mov bx,[0x579]
-    mov dh,[0x57b]
+    mov bx,[cat_x]
+    mov dh,[cat_y]
     mov di,0x18
     mov cx,0xe05
     call check_rect_collision
@@ -2450,8 +2450,8 @@ lab_45b6:
     jnb short lab_45d6
     call check_l5_landing
     jnb short lab_45b5
-    mov byte [0x571],0x1
-    mov byte [0x55b],0x10
+    mov byte [in_level_mode],0x1
+    mov byte [transition_timer],0x10
     ret
 lab_45d6:
     call check_l5_perch_hit
@@ -2463,7 +2463,7 @@ lab_45d6:
     jnz short lab_45f7
     inc al
     mov bx,[dat_40a8]
-    cmp bx,[0x579]
+    cmp bx,[cat_x]
     ja short lab_45f7
     mov al,0xff
 lab_45f7:
@@ -2472,7 +2472,7 @@ lab_45fa:
     mov byte [dat_40af],0x1
     mov cx,0x20
 lab_4602:
-    mov ax,[0x579]
+    mov ax,[cat_x]
     mov dl,0x1
     cmp byte [dat_40b0],0x1
     jnz short lab_4615
@@ -2482,10 +2482,10 @@ lab_4602:
 lab_4615:
     db 0x05, 0x08, 0x00                 ; add ax,0x8
 lab_4618:
-    mov [0x579],ax
+    mov [cat_x],ax
     mov [0x56e],dl
-    mov al,[0x57b]
-    cmp byte [0x571],0x1
+    mov al,[cat_y]
+    cmp byte [in_level_mode],0x1
     jb short lab_4639
     jnz short lab_462f
     sub al,0x3
@@ -2493,7 +2493,7 @@ lab_4618:
 lab_462f:
     add al,0x3
 lab_4631:
-    mov [0x57b],al
+    mov [cat_y],al
     add al,0x32
     mov [0x57c],al
 lab_4639:
@@ -2547,8 +2547,8 @@ lab_46a2:
     jz short lab_46be
     call check_l5_landing
     jnb short lab_46bd
-    mov byte [0x571],0x1
-    mov byte [0x55b],0x10
+    mov byte [in_level_mode],0x1
+    mov byte [transition_timer],0x10
 lab_46bd:
     ret
 lab_46be:
@@ -2604,8 +2604,8 @@ check_l5_perch_hit:
     mov ax,[dat_40a8]
     mov dl,[dat_40aa]
     mov si,0x18
-    mov bx,[0x579]
-    mov dh,[0x57b]
+    mov bx,[cat_x]
+    mov dh,[cat_y]
     db 0x8b, 0xfe                       ; mov di,si
     mov cx,0xe10
     call check_rect_collision
@@ -2652,12 +2652,12 @@ check_thrown_near_cat:
     mov ax,[thrown_obj_x]
     mov dl,[thrown_obj_y]
     mov si,0x10
-    mov bx,[0x579]
+    mov bx,[cat_x]
     sub bx,0x8
     jnb short lab_47c5
     db 0x2b, 0xdb                       ; sub bx,bx
 lab_47c5:
-    mov dh,[0x57b]
+    mov dh,[cat_y]
     add dh,0x3
     mov di,0x28
     mov cx,0xe1e
@@ -2687,10 +2687,10 @@ lab_4800:
     cmp word [bx+dat_4441],0x0
     jz short lab_487d
     mov ax,[bx+dat_43f9]
-    cmp al,[0x57b]
+    cmp al,[cat_y]
     jnz short lab_485d
     mov ax,[bx+dat_43e1]
-    sub ax,[0x579]
+    sub ax,[cat_x]
     jnb short lab_4822
     not ax
 lab_4822:
@@ -2779,8 +2779,8 @@ check_l6_proximity:
     mov dx,[bx+dat_43f9]
     db 0x2d, 0x14, 0x00                 ; sub ax,0x14
     mov si,0x28
-    mov bx,[0x579]
-    mov dh,[0x57b]
+    mov bx,[cat_x]
+    mov dh,[cat_y]
     mov cx,0xe06
     mov di,0x18
     call check_rect_collision
@@ -2854,8 +2854,8 @@ lab_499f:
     mov [dat_44c1],ax
     mov [dat_44bf],ax
     mov cx,0xc
-    mov si,[0x579]
-    mov dl,[0x57b]
+    mov si,[cat_x]
+    mov dl,[cat_y]
     add dl,0x8
 lab_49b6:
     db 0x8b, 0xd9                       ; mov bx,cx
@@ -2908,7 +2908,7 @@ lab_4a33:
     mov [0x56e],al
     mov [dat_44be],al
     mov byte [0x699],0x0
-    mov byte [0x571],0x0
+    mov byte [in_level_mode],0x0
     jmp short lab_49f9
 lab_4a4b:
     mov byte [dat_44be],0x0
@@ -2924,9 +2924,9 @@ lab_4a5d:
     inc al
 lab_4a6d:
     mov [dat_44d5],al
-    mov cx,[0x579]
+    mov cx,[cat_x]
     and cx,0xffc
-    mov dl,[0x57b]
+    mov dl,[cat_y]
     add dl,0x3
     cmp word [dat_44d1],0x410c
     jz short lab_4a95
@@ -3136,7 +3136,7 @@ lab_4c67:
     mov word [l7_cat_last_tick],0x0
     mov byte [l7_cat_moving],0x1
     mov ax,0x24
-    cmp word [0x579],0xa0
+    cmp word [cat_x],0xa0
     ja short lab_4c84
     mov ax,0x108
 lab_4c84:
@@ -3164,11 +3164,11 @@ lab_4cb5:
     nop
 lab_4cb8:
     mov al,[l7_cat_y]
-    cmp al,[0x57b]
+    cmp al,[cat_y]
     ja short lab_4d14
     cmp word [l7_heart_index],0x6
     jnz short lab_4ccf
-    cmp byte [0x57b],0x28
+    cmp byte [cat_y],0x28
     jb short lab_4cdc
 lab_4ccf:
     call random
@@ -3179,7 +3179,7 @@ lab_4cdc:
     db 0x2a, 0xd2                       ; sub dl,dl
     mov ax,[l7_cat_x]
     and ax,0xff8
-    mov cx,[0x579]
+    mov cx,[cat_x]
     and cx,0xff8
     db 0x3b, 0xc1                       ; cmp ax,cx
     jz short lab_4cf6
@@ -3188,7 +3188,7 @@ lab_4cdc:
     mov dl,0xff
 lab_4cf6:
     mov [l7_cat_dir],dl
-    cmp byte [0x57b],0x28
+    cmp byte [cat_y],0x28
     jb short lab_4d14
     cmp word [l7_heart_index],0x6
     jnz short lab_4d14
@@ -3267,8 +3267,8 @@ lab_4dc8:
     call save_l7_slot
     ret
 check_l7_cat_hit:
-    mov ax,[0x579]
-    mov dl,[0x57b]
+    mov ax,[cat_x]
+    mov dl,[cat_y]
     mov si,0x18
     db 0x8b, 0xfe                       ; mov di,si
     mov bx,[l7_cat_x]
@@ -3287,14 +3287,14 @@ lab_4e00:
     call restore_alley_buffer
     call erase_l7_sprite
     call draw_alley_foreground
-    mov byte [0x55b],0x4
-    mov byte [0x571],0x1
-    mov byte [0x576],0x4
-    mov byte [0x578],0x8
+    mov byte [transition_timer],0x4
+    mov byte [in_level_mode],0x1
+    mov byte [anim_counter],0x4
+    mov byte [anim_step],0x8
     mov byte [l7_cat_delay],0x4
     mov dl,0x1
     mov ax,[l7_cat_x]
-    cmp ax,[0x579]
+    cmp ax,[cat_x]
     ja short lab_4e2f
     mov dl,0xff
 lab_4e2f:
@@ -3534,7 +3534,7 @@ lab_5036:
 position_victory_cat:
     mov ax,0xb800
     mov es,ax
-    mov ax,[0x579]
+    mov ax,[cat_x]
     cmp ax,0x117
     jb short lab_5070
     mov ax,0x116
@@ -3544,8 +3544,8 @@ lab_5070:
     db 0x2b, 0xc0                       ; sub ax,ax
 lab_5077:
     and ax,0xff0
-    mov [0x579],ax
-    mov byte [0x57b],0x14
+    mov [cat_x],ax
+    mov byte [cat_y],0x14
     sub ax,0x80
     jnb short lab_5089
     not ax
@@ -3567,7 +3567,7 @@ lab_50ab:
     db 0x2a, 0xe4                       ; sub ah,ah
     int byte 0x1a
     mov [dat_4a80],dx
-    mov ax,[0x579]
+    mov ax,[cat_x]
     db 0x8b, 0xc8                       ; mov cx,ax
     and cx,0xff0
     cmp cx,0x80
@@ -3581,15 +3581,15 @@ lab_50c6:
 lab_50ce:
     add ax,[l7_cupid_dx]
 lab_50d2:
-    mov [0x579],ax
-    cmp byte [0x57b],0x54
+    mov [cat_x],ax
+    cmp byte [cat_y],0x54
     jb short lab_50dd
     ret
 lab_50dd:
-    add byte [0x57b],0x8
-    mov cx,[0x579]
+    add byte [cat_y],0x8
+    mov cx,[cat_x]
     add cx,0x4
-    mov dl,[0x57b]
+    mov dl,[cat_y]
     call calc_cga_addr
     db 0x8b, 0xf8                       ; mov di,ax
     mov [l7_cupid_cga_addr],di

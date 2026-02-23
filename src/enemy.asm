@@ -120,8 +120,8 @@ level_transition:
     cmp byte [0x553],0x0
     jz short lab_1c12
     call run_victory_sequence
-    mov word [0x579],0x98
-    mov byte [0x57b],0x5f
+    mov word [cat_x],0x98
+    mov byte [cat_y],0x5f
 lab_1c12:
     mov ax,0xb800
     mov es,ax
@@ -160,8 +160,8 @@ animate_screen_wipe:
     call wipe_sound_start
     mov word [wipe_width],0x1
     mov byte [wipe_height],0x8
-    mov cx,[0x579]
-    mov dl,[0x57b]
+    mov cx,[cat_x]
+    mov dl,[cat_y]
     add cx,0xc
     db 0x81, 0xe1, 0xf0, 0xff           ; and cx,0xfff0
     add dl,0x8
