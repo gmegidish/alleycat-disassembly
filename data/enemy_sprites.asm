@@ -53,24 +53,24 @@ idle_aggro_flag:
 deduct_life:
     db 0x00
 ; death_sprite - BONK! speech bubble (40px x 18, blit_transparent)
-;   ..................dd...dd......dd...dd..
-;   .........dd....ddddd.dddd.dddd.ddd..ddd.
-;   ......d...dd..ddcccdddccdddccddccd.ddccd
-;   ...d.dd..dddd..dcccccddccddccddccddddccd
-;   ...ddd..ddddddddccddccdccddccdccddddccd.
-;   ....ddd.ddcccddddccdccddccdccccdddddccd.
-;   ...ddddddccdccdddccddccdccdccccddddccdd.
-;   d.dddddddccddccdddccdccccddccdccdddccddd
-;   dddcccddddccddccddccddccddccddccdddddd.d
-;   ddcccccdddccddccddccddddddccdddccdccd...
-;   .dccddcddddccddccddd.ddd.ddd.dddddccdd..
-;   .dccdccccddcccdccdddddd..dddd.ddddddd...
-;   dddccccdccdddcccdd.ddd...dd...dddddd....
-;   ddddccddccdddddddd..d.....d......dddd...
-;   d..ddcccccdd.dddd..................ddd..
-;   ..ddddcccdd....ddd......................
-;   ..dd.dddd...............................
-;   .......dd...............................
+;                     ██   ██      ██   ██
+;            ██    █████ ████ ████ ███  ███
+;         █   ██  ██▒▒▒███▒▒███▒▒██▒▒█ ██▒▒█
+;      █ ██  ████  █▒▒▒▒▒██▒▒██▒▒██▒▒████▒▒█
+;      ███  ████████▒▒██▒▒█▒▒██▒▒█▒▒████▒▒█
+;       ███ ██▒▒▒████▒▒█▒▒██▒▒█▒▒▒▒█████▒▒█
+;      ██████▒▒█▒▒███▒▒██▒▒█▒▒█▒▒▒▒████▒▒██
+;   █ ███████▒▒██▒▒███▒▒█▒▒▒▒██▒▒█▒▒███▒▒███
+;   ███▒▒▒████▒▒██▒▒██▒▒██▒▒██▒▒██▒▒██████ █
+;   ██▒▒▒▒▒███▒▒██▒▒██▒▒██████▒▒███▒▒█▒▒█
+;    █▒▒██▒████▒▒██▒▒███ ███ ███ █████▒▒██
+;    █▒▒█▒▒▒▒██▒▒▒█▒▒██████  ████ ███████
+;   ███▒▒▒▒█▒▒███▒▒▒██ ███   ██   ██████
+;   ████▒▒██▒▒████████  █     █      ████
+;   █  ██▒▒▒▒▒██ ████                  ███
+;     ████▒▒▒██    ███
+;     ██ ████
+;          ██
 death_sprite:
     db 0x00, 0x00, 0x00, 0x00, 0x0f, 0x03, 0xc0, 0x03, 0xc0, 0xf0, 0x00, 0x00, 0x3c, 0x03 ; ..............<.
     db 0xff, 0x3f, 0xcf, 0xf3, 0xf0, 0xfc, 0x00, 0x0c, 0x0f, 0x0f, 0xab, 0xfa, 0xfe, 0xbe, 0xb3, 0xeb ; .?..............
